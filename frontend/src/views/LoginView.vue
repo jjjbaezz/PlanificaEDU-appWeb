@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <div class="w-full">
+        <div class="w-full footerLogin">
             <img src="../assets/imgs/vectorAzulLogin.png" alt="Vector decorativo" class="w-full h-auto" />
         </div>
     </div>
