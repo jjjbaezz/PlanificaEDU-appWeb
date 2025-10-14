@@ -1,2 +1,15 @@
 @import "tailwindcss";
 
+.min-h-screen {
+    min-height: 120vh;
+}
+
+.footerLogin{
+    margin-top: -70px;
+}
+
+@media (max-width: 500px) {
+    .min-h-screen {
+        min-height: 100vh;
+    }
+}
