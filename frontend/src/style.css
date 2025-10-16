@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-.min-h-screen {
-    min-height: 120vh;
-}
-
 .footerLogin{
     margin-top: -70px;
 }

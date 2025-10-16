@@ -1,26 +1,45 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
-// Views
-const LoginView = () => import('../views/LoginView.vue')
-const RegisterView = () => import('../views/RegisterView.vue')
-
-// Componentes 
-const PreferenceSelector = () => import('../components/PreferenceSelector.vue')
-const UserTypeSelector = () => import('../components/UserTypeSelector.vue')
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import UserTypeSelector from '../components/UserTypeSelector.vue'
+import PreferenceSelector from '../components/PreferenceSelector.vue'
+import Dashboard from '../views/Dashboard.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
-  { path: '/login', name: 'login', component: LoginView },
-  { path: '/register', name: 'register', component: RegisterView },
 
-  // Eto son lo componente pa verlo
-  { path: '/preferencias', name: 'preferencias', component: PreferenceSelector },
-  { path: '/quien-eres', name: 'quien-eres', component: UserTypeSelector },
+  { path: '/login', component: LoginView, meta: { guestOnly: true } },
+  { path: '/register', component: RegisterView, meta: { guestOnly: true } },
 
-  { path: '/:pathMatch(.*)*', name: 'not-found', component: { template: '<div style="padding:24px">404 - Página no encontrada</div>' } }
+  { path: '/onboarding/type', component: UserTypeSelector, meta: { requiresAuth: true } },
+  { path: '/onboarding/preferences', component: PreferenceSelector, meta: { requiresAuth: true } },
+
+  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
 ]
 
-export const router = createRouter({
+const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 })
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+
+  if (!auth.user && auth.token) {
+    await auth.me()
+  }
+
+  if (to.meta.requiresAuth && !auth.isAuth) {
+    return '/login'
+  }
+
+  if (to.meta.guestOnly && auth.isAuth) {
+    if (!auth.user?.rol) return '/onboarding/type'
+    return '/dashboard'
+  }
+})
+
+export default router;

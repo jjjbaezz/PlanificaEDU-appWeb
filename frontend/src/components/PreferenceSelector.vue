@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
-    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+  <div class="min-h-screen bg-gray-50 flex flex-col relative">
+    <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 z-10">
       <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
         <div class="w-full max-w-md mx-auto lg:mx-0">
           <div class="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <div class="w-full footerLogin">
+    <div class="w-full footerLogin absolute bottom-0">
       <img src="../assets/imgs/vectorAzulLogin.png" alt="Vector decorativo" class="w-full h-auto" />
     </div>
   </div>
