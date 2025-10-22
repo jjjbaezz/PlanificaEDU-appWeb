@@ -6,6 +6,10 @@ import passport from 'passport';
 import './config/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import subjectRoutes from './routes/subject.routes.js';
+import careerRoutes  from './routes/career.routes.js';
+
+
 
 dotenv.config();
 
@@ -33,6 +37,10 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/subjects', subjectRoutes);
+app.use('/careers', careerRoutes);
+
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`API running on http://localhost:${port}`));
