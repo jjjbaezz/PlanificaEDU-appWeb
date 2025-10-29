@@ -8,6 +8,14 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import subjectRoutes from './routes/subject.routes.js';
 import careerRoutes  from './routes/career.routes.js';
+import classrooomRoutes from './routes/classroom.routes.js';
+import buildingRoutes from './routes/building.routes.js';
+import periodRoutes from './routes/period.routes.js';
+import scheduleRoutes from './routes/schedule.routes.js';
+
+
+
+
 
 
 
@@ -38,7 +46,12 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/subjects', subjectRoutes);
+app.use('/classrooms', classrooomRoutes);
 app.use('/careers', careerRoutes);
+app.use('/buildings', buildingRoutes);
+app.use('/periods', periodRoutes);
+app.use('/schedules', scheduleRoutes);
+
 
 
 
