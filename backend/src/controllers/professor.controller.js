@@ -126,6 +126,10 @@ export const bulkUpdateAvailability = async (req, res) => {
     const { id } = req.params;
     const { updates } = req.body;
 
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ message: 'updates debe ser un arreglo no vacío' });
+    }
+
     if (req.user.id !== id && req.user.rol !== 'ADMIN') {
       return res.status(403).json({ message: 'Sin permisos' });
     }
@@ -139,8 +143,14 @@ export const bulkUpdateAvailability = async (req, res) => {
       return res.status(404).json({ message: 'Profesor no encontrado' });
     }
 
+    const profesorId = id;
+    const ALLOWED_ESTADOS = ['DISPONIBLE', 'BLOQUEADO'];
+
     const results = await Promise.all(
       updates.map(async ({ bloque_id, estado }) => {
+        if (!ALLOWED_ESTADOS.includes(estado)) {
+          throw new Error(`Estado inválido para bloque ${bloque_id}. Valores permitidos: ${ALLOWED_ESTADOS.join(', ')}`);
+        }
         const found = await prisma.disponibilidad_profesor.findFirst({
           where: { profesor_id: profesorId, bloque_id }
         });

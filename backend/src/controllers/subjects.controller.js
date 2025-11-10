@@ -39,11 +39,15 @@ export const listSubjects = async (req, res) => {
     const skip = (Number(page) - 1) * Number(pageSize);
     const take = Number(pageSize);
 
+    const sortable = ['codigo', 'nombre', 'creditos', 'carrera_id'];
+    const sortField = sortable.includes(String(sort)) ? String(sort) : 'codigo';
+    const sortOrder = order === 'desc' ? 'desc' : 'asc';
+
     const [total, items] = await Promise.all([
       prisma.materias.count({ where }),
       prisma.materias.findMany({
         where,
-        orderBy: { [String(sort)]: order === 'desc' ? 'desc' : 'asc' },
+        orderBy: { [sortField]: sortOrder },
         skip,
         take
       })
