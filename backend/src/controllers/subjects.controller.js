@@ -213,6 +213,25 @@ export const removePrerequisite = async (req, res) => {
   }
 };
 
+// GET /subjects/:id/groups
+export const listSubjectGroups = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { periodo_id } = req.query;
+
+    const where = { materia_id: id };
+    if (periodo_id) where.periodo_id = String(periodo_id);
+
+    const groups = await prisma.grupos.findMany({
+      where
+    });
+
+    res.json({ items: groups });
+  } catch (error) {
+    console.error('Error listSubjectGroups:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
 
 // GET /subjects/validate?codigo=ABC123
 export const validateSubjectCode = async (req, res) => {
