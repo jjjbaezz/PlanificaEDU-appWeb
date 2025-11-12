@@ -5,10 +5,6 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p class="text-gray-500 text-sm mt-1">
-              Hola, <span class="font-semibold">{{ nombre }}</span>
-              — <span class="text-gray-700 font-semibold">Profesor</span>
-            </p>
           </div>
           <div class="flex items-center gap-4">
             <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -19,6 +15,10 @@
             <div class="w-10 h-10 bg-purple-200 rounded-full flex items-center justify-center font-bold text-purple-700 text-sm">
               NP
             </div>
+            <div>
+            <p class="text-sm font-bold text-gray-900">{{ nombre }}</p>
+            <p class="text-gray-500 text-sm mt-1">Profesor</p>
+          </div>
           </div>
         </div>
       </header>

@@ -4,11 +4,7 @@
     <header class="sticky top-0 bg-white border-b border-gray-200 z-20 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-sky-400">Dashboard</h1>
-          <p class="text-gray-500 text-sm mt-1">
-            Hola, <span class="font-semibold">{{ nombre }}</span>
-            — Rol: <span class="uppercase text-gray-700 font-semibold">{{ role }}</span>
-          </p>
+          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
         </div>
         <div class="flex items-center gap-4">
           <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -18,6 +14,10 @@
           </button>
           <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm">
             AM
+          </div>
+          <div>
+            <p class="text-sm font-bold text-gray-900">{{ nombre }}</p>
+            <p class="text-gray-500 text-sm mt-1">{{ role }}</p>
           </div>
         </div>
       </div>
