@@ -21,7 +21,7 @@ const routes = [
 
   { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/dashboardProfesor', component: DashboardPro, meta: { requiresAuth: true } },
-  { path: '/asignaturas', component: Asignaturas, },
+  { path: '/asignaturas', component: Asignaturas, meta: { requiresAuth: true } },
 
 ]
 
