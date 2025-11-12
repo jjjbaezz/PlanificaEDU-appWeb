@@ -27,12 +27,14 @@
   
         <!-- Menu Items -->
         <nav class="flex-1 px-4 py-6 space-y-2">
-          <RouterLink
-            v-for="item in menuItems"
-            :key="item.id"
-            :to="item.path"
-            active-class="bg-blue-100"
-            class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            <RouterLink
+          v-for="item in menuItems"
+          :key="item.id"
+          :to="item.path"
+          :class="[
+            'flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors',
+            isDashboardActive(item.path) ? 'bg-blue-100 text-blue-600' : ''
+          ]"
           >
             <img 
               :src="getIconPath(item.icon)" 
@@ -96,51 +98,33 @@
     </div>
   </template>
   
-  <script setup>
+  <script setup lang="ts">
   import { ref } from 'vue'
-  import { RouterLink } from 'vue-router'
+  import { RouterLink, useRoute } from 'vue-router'
   
   const isOpen = ref(false)
+  const $route = useRoute()
   
   const menuItems = [
-    {
-      id: 1,
-      label: 'Dashboard',
-      path: '/dashboard',
-      icon: 'DashboardIcon.svg'
-    },
-    {
-      id: 2,
-      label: 'Usuarios',
-      path: '/usuarios',
-      icon: 'UsuariosIcon.svg'
-    },
-    {
-      id: 3,
-      label: 'Asignaturas',
-      path: '/asignaturas',
-      icon: 'AsignaturasIcon.svg'
-    },
-    {
-      id: 4,
-      label: 'Carreras',
-      path: '/carreras',
-      icon: 'CarrerasIcon.svg'
-    },
-    {
-      id: 5,
-      label: 'Horarios',
-      path: '/horarios',
-      icon: 'HorariosIcon.svg'
-    }
+    { id: 1, label: 'Dashboard', path: '/dashboard', icon: 'DashboardIcon.svg' },
+    { id: 2, label: 'Usuarios', path: '/usuarios', icon: 'UsuariosIcon.svg' },
+    { id: 3, label: 'Asignaturas', path: '/asignaturas', icon: 'AsignaturasIcon.svg' },
+    { id: 4, label: 'Carreras', path: '/carreras', icon: 'CarrerasIcon.svg' },
+    { id: 5, label: 'Horarios', path: '/horarios', icon: 'HorariosIcon.svg' }
   ]
   
-  const getIconPath = (iconName) => {
+  const isDashboardActive = (itemPath: string): boolean => {
+    if (itemPath === '/dashboard') {
+      return $route.path === '/dashboard' || $route.path === '/dashboardProfesor'
+    }
+    return $route.path === itemPath
+  }
+  
+  const getIconPath = (iconName: string): string => {
     return new URL(`../assets/imgs/menuImgs/${iconName}`, import.meta.url).href
   }
   
-  //Aqui la logica de lo tiguere duro en backen, el mio y gente asi utede saben
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     console.log('Cerrando sesión...')
   }
   </script>
