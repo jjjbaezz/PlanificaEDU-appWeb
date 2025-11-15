@@ -20,8 +20,46 @@ const serverError = ref('')
 const router = useRouter()
 const auth = useAuthStore()
 
+// Easter egg: 5 clicks en el logo para registro con datos dummy
+const clickCount = ref(0)
+const clickTimeout = ref(null)
+
 // Schema dependiente del valor de password (para validar confirm)
 const schema = getRegisterSchema(password)
+
+function handleLogoClick() {
+  clickCount.value++
+  console.log(`Click #${clickCount.value}`)
+
+  // Reset del contador después de 2 segundos sin clicks
+  if (clickTimeout.value) clearTimeout(clickTimeout.value)
+  clickTimeout.value = setTimeout(() => {
+    clickCount.value = 0
+  }, 2000)
+
+  // Si llega a 5 clicks, registra con datos dummy
+  if (clickCount.value === 5) {
+    console.log('¡Easter egg activado! Registrando con datos dummy...')
+    registerWithDummyData()
+    clickCount.value = 0
+  }
+}
+
+function registerWithDummyData() {
+  // Crear sesión dummy sin necesidad de backend - SIN ROL para ir a onboarding
+  const dummyUser = {
+    id: 'dummy-user-' + Date.now(),
+    nombre: 'Nuevo Usuario',
+    email: 'nuevo@planificaedu.com',
+    rol: null, // Sin rol para que vaya al onboarding
+    activo: true
+  }
+  const dummyToken = 'dummy-token-registration-' + Date.now()
+
+  // Activar modo dummy
+  auth._setSession({ user: dummyUser, token: dummyToken, isDummyMode: true })
+  router.push('/onboarding/type')
+}
 
 function runFieldValidation(name) {
   const values = { nombre: nombre.value, email: email.value, password: password.value, confirm: confirm.value }
@@ -148,7 +186,13 @@ const onSubmit = async (e) => {
         </div>
 
         <div class="w-full lg:w-1/2 text-center lg:text-left order-1 lg:order-2">
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-sky-400 mb-4">PlanificaEDU</h1>
+          <h1
+            @click="handleLogoClick"
+            class="text-5xl sm:text-6xl lg:text-7xl font-bold text-sky-400 mb-4 cursor-pointer select-none transition-transform hover:scale-105"
+            title="PlanificaEDU"
+          >
+            PlanificaEDU
+          </h1>
           <p class="text-xl sm:text-2xl text-gray-500">Sistema de planificación académica</p>
         </div>
       </div>

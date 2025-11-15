@@ -7,6 +7,12 @@ import RegisterView from '../views/RegisterView.vue'
 import UserTypeSelector from '../components/UserTypeSelector.vue'
 import PreferenceSelector from '../components/PreferenceSelector.vue'
 import Dashboard from '../views/Dashboard.vue'
+import MateriasView from '../views/MateriasView.vue'
+import MateriasAdminView from '../views/admin/MateriasAdminView.vue'
+import ConfiguracionView from '../views/ConfiguracionView.vue'
+import UsuariosView from '../views/admin/UsuariosView.vue'
+import CarrerasView from '../views/admin/CarrerasView.vue'
+import HorariosView from '../views/admin/HorariosView.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -18,6 +24,12 @@ const routes = [
   { path: '/onboarding/preferences', component: PreferenceSelector, meta: { requiresAuth: true } },
 
   { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
+  { path: '/materias', component: MateriasView, meta: { requiresAuth: true } },
+  { path: '/admin/materias', component: MateriasAdminView, meta: { requiresAuth: true } },
+  { path: '/admin/carreras', component: CarrerasView, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/horarios', component: HorariosView, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/usuarios', component: UsuariosView, meta: { requiresAuth: true } },
+  { path: '/configuracion', component: ConfiguracionView, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({
@@ -39,6 +51,12 @@ router.beforeEach(async (to) => {
   if (to.meta.guestOnly && auth.isAuth) {
     if (!auth.user?.rol) return '/onboarding/type'
     return '/dashboard'
+  }
+
+  // Protege rutas que requieren rol ADMIN
+  if (to.meta.requiresAdmin) {
+    if (!auth.user) return '/login'
+    if (auth.user?.rol !== 'ADMIN') return '/dashboard'
   }
 })
 

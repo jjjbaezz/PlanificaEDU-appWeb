@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user') || 'null'),
     token: localStorage.getItem('token') || '',
+    isDummyMode: localStorage.getItem('isDummyMode') === 'true',
     loading: false,
     error: null,
   }),
@@ -15,17 +16,21 @@ export const useAuthStore = defineStore('auth', {
     userRole: (s) => s.user?.rol || null,
   },
   actions: {
-    _setSession({ user, token }) {
+    _setSession({ user, token, isDummyMode = false }) {
       this.user = user
       this.token = token
+      this.isDummyMode = isDummyMode
       localStorage.setItem('user', JSON.stringify(user))
       localStorage.setItem('token', token)
+      localStorage.setItem('isDummyMode', isDummyMode.toString())
     },
     _clearSession() {
       this.user = null
       this.token = ''
+      this.isDummyMode = false
       localStorage.removeItem('user')
       localStorage.removeItem('token')
+      localStorage.removeItem('isDummyMode')
     },
 
     async register(payload) {
