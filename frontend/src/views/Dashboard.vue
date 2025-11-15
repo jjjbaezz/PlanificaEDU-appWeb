@@ -25,8 +25,22 @@ function toggleSidebar() {
 const activeView = ref('dashboard') // 'dashboard' or 'carreras' etc.
 
 function goToCarreras() {
-  // only allow if admin
-  if (auth.user?.rol === 'ADMIN') activeView.value = 'carreras'
+  // navigate only for admins; otherwise do nothing
+  if (auth.user?.rol === 'ADMIN') {
+    router.push('/admin/carreras')
+  }
+}
+
+function goToUsuarios() {
+  if (auth.user?.rol === 'ADMIN') {
+    router.push('/usuarios')
+  }
+}
+
+function goToHorarios() {
+  if (auth.user?.rol === 'ADMIN') {
+    router.push('/admin/horarios')
+  }
 }
 
 // Loading states
@@ -319,22 +333,22 @@ const hdrInscripciones = [
           <span>📊</span>
           <span v-show="!sidebarCollapsed">Dashboard</span>
         </RouterLink>
-        <RouterLink v-if="role === 'ADMIN'" to="/usuarios" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+        <button @click="goToUsuarios" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
           <span>👥</span>
           <span v-show="!sidebarCollapsed">Usuarios</span>
-        </RouterLink>
+        </button>
         <RouterLink :to="role === 'ADMIN' ? '/admin/materias' : '/materias'" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
           <span>📚</span>
           <span v-show="!sidebarCollapsed">Materias</span>
         </RouterLink>
-        <RouterLink v-if="role === 'ADMIN'" to="/admin/carreras" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+        <button @click="goToCarreras" class="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
           <span>🎓</span>
           <span v-show="!sidebarCollapsed">Carreras</span>
-        </RouterLink>
-        <RouterLink :to="role === 'ADMIN' ? '/admin/horarios' : '/dashboard'" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+        </button>
+        <button @click="goToHorarios" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
           <span>🕐</span>
           <span v-show="!sidebarCollapsed">Horarios</span>
-        </RouterLink>
+        </button>
       </nav>
 
       <!-- Footer del sidebar -->

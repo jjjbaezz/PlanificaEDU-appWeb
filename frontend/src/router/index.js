@@ -27,7 +27,7 @@ const routes = [
   { path: '/materias', component: MateriasView, meta: { requiresAuth: true } },
   { path: '/admin/materias', component: MateriasAdminView, meta: { requiresAuth: true } },
   { path: '/admin/carreras', component: CarrerasView, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/horarios', component: HorariosView, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/horarios', component: HorariosView, meta: { requiresAuth: true } },
   { path: '/usuarios', component: UsuariosView, meta: { requiresAuth: true } },
   { path: '/configuracion', component: ConfiguracionView, meta: { requiresAuth: true } },
 ]
