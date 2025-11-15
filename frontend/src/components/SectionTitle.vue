@@ -1,10 +1,13 @@
-<script setup>
-defineProps({ title: String, subtitle: String })
-</script>
-
 <template>
-  <div class="mb-4">
-    <h3 class="text-lg font-semibold text-sky-400">{{ title }}</h3>
-    <p v-if="subtitle" class="text-gray-500 text-sm">{{ subtitle }}</p>
+  <div>
+    <h3 class="text-lg font-bold text-gray-900">{{ title }}</h3>
+    <p v-if="subtitle" class="text-gray-500 text-sm mt-1">{{ subtitle }}</p>
   </div>
 </template>
+
+<script setup>
+defineProps({
+  title: String,
+  subtitle: String,
+})
+</script>

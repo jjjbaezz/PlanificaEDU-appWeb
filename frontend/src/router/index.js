@@ -7,6 +7,8 @@ import RegisterView from '../views/RegisterView.vue'
 import UserTypeSelector from '../components/UserTypeSelector.vue'
 import PreferenceSelector from '../components/PreferenceSelector.vue'
 import Dashboard from '../views/Dashboard.vue'
+import DashboardPro from '../views/DashboardProfesor.vue'
+import Asignaturas from '../views/Asignaturas.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -18,6 +20,9 @@ const routes = [
   { path: '/onboarding/preferences', component: PreferenceSelector, meta: { requiresAuth: true } },
 
   { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } },
+  { path: '/dashboardProfesor', component: DashboardPro, meta: { requiresAuth: true } },
+  { path: '/asignaturas', component: Asignaturas, meta: { requiresAuth: true } },
+
 ]
 
 const router = createRouter({

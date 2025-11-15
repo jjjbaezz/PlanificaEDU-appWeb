@@ -1,33 +1,43 @@
-<script setup>
-defineProps({
-  title: String,
-  headers: { type: Array, default: () => [] },
-  rows: { type: Array, default: () => [] },
-  emptyText: { type: String, default: 'Sin datos' },
-})
-</script>
-
 <template>
-  <div class="bg-white rounded-2xl shadow p-6">
-    <h4 class="text-base font-semibold text-sky-400 mb-4">{{ title }}</h4>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <h3 class="text-lg font-bold text-gray-900 mb-6">{{ title }}</h3>
+
+    <div v-if="rows.length === 0" class="text-center py-8">
+      <p class="text-gray-500">{{ emptyText }}</p>
+    </div>
+
+    <div v-else class="overflow-x-auto">
+      <table class="w-full text-sm">
         <thead>
-          <tr class="text-left text-gray-500 border-b">
-            <th v-for="h in headers" :key="h.key" class="py-2 pr-4">{{ h.label }}</th>
+          <tr class="border-b border-gray-200">
+            <th v-for="header in headers" :key="header.key" class="text-left py-3 px-4 font-semibold text-gray-600 text-xs uppercase">
+              {{ header.label }}
+            </th>
           </tr>
         </thead>
-        <tbody class="text-gray-700">
-          <tr v-for="(r, idx) in rows" :key="idx" class="border-b hover:bg-gray-50">
-            <td v-for="h in headers" :key="h.key" class="py-2 pr-4">
-              {{ r[h.key] ?? '—' }}
+        <tbody>
+          <tr v-for="(row, idx) in rows" :key="idx" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <td v-for="header in headers" :key="header.key" class="py-4 px-4 text-gray-700">
+              <span v-if="header.key === 'estado'" :class="[
+                'inline-block px-3 py-1 rounded-full text-xs font-medium',
+                row[header.key] === 'Aprobada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              ]">
+                {{ row[header.key] }}
+              </span>
+              <span v-else>{{ row[header.key] }}</span>
             </td>
-          </tr>
-          <tr v-if="!rows.length">
-            <td :colspan="headers.length" class="py-4 text-gray-400">{{ emptyText }}</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 </template>
+
+<script setup>
+defineProps({
+  title: String,
+  headers: Array,
+  rows: Array,
+  emptyText: { type: String, default: 'Sin datos' },
+})
+</script>
