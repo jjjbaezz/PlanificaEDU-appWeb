@@ -1,3 +1,185 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import { useRouter } from 'vue-router'
+import http from '../services/http'
+import Sidebar from '../components/Sidebar.vue'
+import StatCard from '../components/StatCard.vue'
+import TableCard from '../components/TableCard.vue'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+const role = computed(() => auth.user?.rol || 'ESTUDIANTE')
+const nombre = computed(() => auth.user?.nombre || 'Usuario')
+
+// Loading and error states
+const loading = ref(false)
+const error = ref(null)
+
+// ADMIN - Stats principales
+const adminStats = ref({
+  totalUsuarios: 1250,
+  carrerasActivas: 18,
+  periodoActual: 'C3-2025',
+  gruposAbiertos: 85
+})
+
+// ADMIN - Ocupación por carrera
+const ocupacionPorCarrera = ref([
+  { carrera: 'Software', ocupacion: 45 },
+  { carrera: 'Psicología', ocupacion: 62 },
+  { carrera: 'Derecho', ocupacion: 78 },
+  { carrera: 'Medicina', ocupacion: 92 },
+  { carrera: 'Arquitectura', ocupacion: 55 },
+  { carrera: 'Diseño', ocupacion: 48 },
+  { carrera: 'Contaduría', ocupacion: 71 }
+])
+
+// ADMIN - Alertas
+const alertas = ref([
+  {
+    tipo: 'warning',
+    icono: '⚠️',
+    titulo: 'Conflicto de Horario',
+    descripcion: 'Aula B-201 reservada dos veces el lunes a las 10am.'
+  },
+  {
+    tipo: 'error',
+    icono: '�',
+    titulo: 'Baja Inscripción',
+    descripcion: 'El grupo de "Cálculo Avanzado" tiene solo 3 estudiantes.'
+  },
+  {
+    tipo: 'success',
+    icono: '✅',
+    titulo: 'Aprobación Pendiente',
+    descripcion: 'Nueva materia "IA Generativa" espera aprobación.'
+  }
+])
+
+// ADMIN - Últimas inscripciones
+const ultimasInscripciones = ref([
+  {
+    estudiante: 'Sofía Vergara',
+    carrera: 'Ingeniería de Software',
+    fecha: '2024-08-15',
+    estado: 'Aprobada'
+  },
+  {
+    estudiante: 'Juan Carlos Pérez',
+    carrera: 'Medicina',
+    fecha: '2024-08-15',
+    estado: 'Aprobada'
+  },
+  {
+    estudiante: 'Valentina Rojas',
+    carrera: 'Arquitectura',
+    fecha: '2024-08-14',
+    estado: 'Pendiente'
+  },
+  {
+    estudiante: 'Mateo González',
+    carrera: 'Derecho',
+    fecha: '2024-08-13',
+    estado: 'Aprobada'
+  }
+])
+
+// PROFESOR
+const profesorCards = ref({
+  totalGrupos: 5,
+  periodoActual: '2025-2',
+  disponibilidadBloques: 24
+})
+
+const profesorTabla = ref([
+  { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', cupo_max: 35 },
+  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', cupo_max: 30 },
+  { periodo: '2025-1', codigo: 'MAT-102', materia: 'Cálculo II', seccion: '02', cupo_max: 30 }
+])
+
+// ESTUDIANTE
+const estudianteStats = ref({
+  periodoActual: '2025-2',
+  misInscripciones: 4,
+  cuposDisponibles: 588
+})
+
+const estudiantePreferencias = ref([
+  { label: 'Turno Preferido', value: 'Mañana' },
+  { label: 'Compactación', value: '7 horas/día' },
+  { label: 'Evitar Días', value: 'Viernes, Sábado' }
+])
+
+const estudianteMaterias = ref([
+  { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', profesor: 'A. Ramírez' },
+  { periodo: '2025-2', codigo: 'PRO-120', materia: 'Programación I', seccion: 'A', profesor: 'L. Paredes' },
+  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', profesor: 'C. Taveras' }
+])
+
+function logout() {
+  auth.logout()
+  router.push('/login')
+}
+
+onMounted(() => {
+  // Load data based on role
+  if (role.value === 'ADMIN') {
+    loadAdminDashboard()
+  } else if (role.value === 'PROFESOR') {
+    loadProfesorDashboard()
+  } else {
+    loadEstudianteDashboard()
+  }
+})
+
+async function loadAdminDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar stats
+    const { data: stats } = await http.get('/admin/dashboard/stats')
+    if (stats) adminStats.value = stats
+  } catch (e) {
+    console.error('Error loading admin dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadProfesorDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar datos del profesor
+    const { data: stats } = await http.get('/profesor/dashboard/stats')
+    if (stats) profesorCards.value = stats
+  } catch (e) {
+    console.error('Error loading profesor dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadEstudianteDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar datos del estudiante
+    const { data: stats } = await http.get('/estudiante/dashboard/stats')
+    if (stats) estudianteStats.value = stats
+  } catch (e) {
+    console.error('Error loading estudiante dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
 <template>
   <Sidebar>
     <!-- Header -->
@@ -13,11 +195,11 @@
             </svg>
           </button>
           <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm">
-            AM
+            {{ nombre.substring(0, 2).toUpperCase() }}
           </div>
           <div>
             <p class="text-sm font-bold text-gray-900">{{ nombre }}</p>
-            <p class="text-gray-500 text-sm mt-1">{{ role }}</p>
+            <p class="text-gray-500 text-sm mt-1">{{ role === 'ADMIN' ? 'Administrador' : role }}</p>
           </div>
         </div>
       </div>
@@ -30,22 +212,22 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <StatCard
             label="Total Usuarios"
-            :value="1250"
+            :value="adminStats.totalUsuarios"
             sublabel="Profesores: 36 · Estudiantes: 92"
           />
           <StatCard
             label="Carreras Activas"
-            :value="18"
+            :value="adminStats.carrerasActivas"
             sublabel="Materias: 154"
           />
           <StatCard
             label="Período Actual"
-            :value="'2024-2'"
+            :value="adminStats.periodoActual"
             sublabel="Grupos: 47"
           />
           <StatCard
             label="Grupos Abiertos"
-            :value="85"
+            :value="adminStats.gruposAbiertos"
             sublabel="Cupos: 588"
           />
         </div>
@@ -60,33 +242,9 @@
             <p class="text-gray-500 text-sm mb-6">Estudiantes inscritos este semestre.</p>
 
             <div class="h-72 bg-gradient-to-b from-sky-50 to-sky-100 rounded-lg flex items-end justify-around px-4 py-8 gap-2">
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 120px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Software</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 100px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Psicología</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 80px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Derecho</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-400 rounded-t" style="height: 180px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Medicina</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 140px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Arquitectura</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 130px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Diseño</p>
-              </div>
-              <div class="flex flex-col items-center gap-2 flex-1">
-                <div class="w-full bg-sky-300 rounded-t" style="height: 110px;"></div>
-                <p class="text-xs text-gray-600 font-medium">Contaduría</p>
+              <div v-for="item in ocupacionPorCarrera" :key="item.carrera" class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full bg-sky-300 rounded-t" :style="{ height: item.ocupacion * 2 + 'px' }"></div>
+                <p class="text-xs text-gray-600 font-medium">{{ item.carrera }}</p>
               </div>
             </div>
           </div>
@@ -95,25 +253,20 @@
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Alertas y Notificaciones</h3>
             <div class="space-y-3">
-              <div class="flex gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <span class="text-xl flex-shrink-0">⚠️</span>
+              <div
+                v-for="(alerta, idx) in alertas"
+                :key="idx"
+                class="flex gap-3 p-3 border rounded-lg"
+                :class="{
+                  'bg-yellow-50 border-yellow-200': alerta.tipo === 'warning',
+                  'bg-red-50 border-red-200': alerta.tipo === 'error',
+                  'bg-green-50 border-green-200': alerta.tipo === 'success'
+                }"
+              >
+                <span class="text-xl flex-shrink-0">{{ alerta.icono }}</span>
                 <div>
-                  <p class="font-semibold text-sm text-gray-900">Conflicto de Horario</p>
-                  <p class="text-xs text-gray-600">Aula B-201 reservada dos veces el lunes a las 10am.</p>
-                </div>
-              </div>
-              <div class="flex gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <span class="text-xl flex-shrink-0">👥</span>
-                <div>
-                  <p class="font-semibold text-sm text-gray-900">Baja Inscripción</p>
-                  <p class="text-xs text-gray-600">El grupo de "Cálculo Avanzado" tiene solo 3 estudiantes.</p>
-                </div>
-              </div>
-              <div class="flex gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <span class="text-xl flex-shrink-0">✅</span>
-                <div>
-                  <p class="font-semibold text-sm text-gray-900">Aprobación Pendiente</p>
-                  <p class="text-xs text-gray-600">Nueva materia "IA Generativa" espera aprobación.</p>
+                  <p class="font-semibold text-sm text-gray-900">{{ alerta.titulo }}</p>
+                  <p class="text-xs text-gray-600">{{ alerta.descripcion }}</p>
                 </div>
               </div>
             </div>
@@ -129,21 +282,16 @@
             { key: 'fecha', label: 'FECHA' },
             { key: 'estado', label: 'ESTADO' },
           ]"
-          :rows="[
-            { estudiante: 'Sofía Vergara', carrera: 'Ingeniería de Software', fecha: '2024-08-15', estado: 'Aprobada' },
-            { estudiante: 'Juan Carlos Pérez', carrera: 'Medicina', fecha: '2024-08-15', estado: 'Aprobada' },
-            { estudiante: 'Valentina Rojas', carrera: 'Arquitectura', fecha: '2024-08-14', estado: 'Pendiente' },
-            { estudiante: 'Mateo González', carrera: 'Derecho', fecha: '2024-08-13', estado: 'Aprobada' },
-          ]"
+          :rows="ultimasInscripciones"
         />
       </section>
 
       <!-- PROFESOR VIEW -->
       <section v-else-if="role === 'PROFESOR'" class="space-y-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <StatCard label="Grupos Asignados" :value="5" />
-          <StatCard label="Período Actual" :value="'2025-2'" />
-          <StatCard label="Bloques Disponibles" :value="24" />
+          <StatCard label="Grupos Asignados" :value="profesorCards.totalGrupos" />
+          <StatCard label="Período Actual" :value="profesorCards.periodoActual" />
+          <StatCard label="Bloques Disponibles" :value="profesorCards.disponibilidadBloques" />
         </div>
 
         <TableCard
@@ -155,29 +303,25 @@
             { key: 'seccion', label: 'Sección' },
             { key: 'cupo_max', label: 'Cupo' },
           ]"
-          :rows="[
-            { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', cupo_max: 35 },
-            { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', cupo_max: 30 },
-            { periodo: '2025-1', codigo: 'MAT-102', materia: 'Cálculo II', seccion: '02', cupo_max: 30 },
-          ]"
+          :rows="profesorTabla"
         />
       </section>
 
       <!-- ESTUDIANTE VIEW -->
       <section v-else class="space-y-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <StatCard label="Período Actual" :value="'2025-2'" />
-          <StatCard label="Mis Inscripciones" :value="4" />
-          <StatCard label="Cupos Disponibles" :value="588" />
+          <StatCard label="Período Actual" :value="estudianteStats.periodoActual" />
+          <StatCard label="Mis Inscripciones" :value="estudianteStats.misInscripciones" />
+          <StatCard label="Cupos Disponibles" :value="estudianteStats.cuposDisponibles" />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Mis Preferencias</h3>
             <div class="space-y-3 text-sm text-gray-700">
-              <p><span class="text-gray-500">Turno Preferido:</span> Mañana</p>
-              <p><span class="text-gray-500">Compactación:</span> 7 horas/día</p>
-              <p><span class="text-gray-500">Evitar Días:</span> Viernes, Sábado</p>
+              <p v-for="pref in estudiantePreferencias" :key="pref.label">
+                <span class="text-gray-500">{{ pref.label }}:</span> {{ pref.value }}
+              </p>
             </div>
           </div>
 
@@ -190,11 +334,7 @@
               { key: 'seccion', label: 'Sección' },
               { key: 'profesor', label: 'Profesor' },
             ]"
-            :rows="[
-              { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', profesor: 'A. Ramírez' },
-              { periodo: '2025-2', codigo: 'PRO-120', materia: 'Programación I', seccion: 'A', profesor: 'L. Paredes' },
-              { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', profesor: 'C. Taveras' },
-            ]"
+            :rows="estudianteMaterias"
           />
         </div>
       </section>
@@ -202,17 +342,7 @@
   </Sidebar>
 </template>
 
-<script setup>
-import { computed, ref } from 'vue'
-import Sidebar from '../components/Sidebar.vue'
-import StatCard from '../components/StatCard.vue'
-import TableCard from '../components/TableCard.vue'
+<style scoped>
+/* small adjustments to match existing UI */
+</style>
 
-const user = ref({
-  nombre: 'Alejandro Mora',
-  rol: 'ADMIN',
-})
-
-const nombre = computed(() => user.value.nombre)
-const role = computed(() => user.value.rol)
-</script>
