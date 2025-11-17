@@ -1,173 +1,348 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useRouter } from 'vue-router'
+import http from '../services/http'
+import Sidebar from '../components/Sidebar.vue'
 import StatCard from '../components/StatCard.vue'
-import SectionTitle from '../components/SectionTitle.vue'
 import TableCard from '../components/TableCard.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 
-const role = computed(() => auth.user?.rol || 'ESTUDIANTE') // fallback
+const role = computed(() => auth.user?.rol || 'ESTUDIANTE')
 const nombre = computed(() => auth.user?.nombre || 'Usuario')
 
-// ===== DATOS ESTÁTICOS POR ROL =====
+// Loading and error states
+const loading = ref(false)
+const error = ref(null)
 
-// ADMIN
-const adminCards = ref({
-  usuarios: { total: 128, profesores: 36, estudiantes: 92 },
-  academico: { carreras: 8, materias: 154, periodos: 5 },
-  ofertaActual: { periodo: '2025-2', grupos: 47, inscripciones: 612, cuposTotales: 1200, cuposDisponibles: 588 },
+// ADMIN - Stats principales
+const adminStats = ref({
+  totalUsuarios: 1250,
+  carrerasActivas: 18,
+  periodoActual: 'C3-2025',
+  gruposAbiertos: 85
 })
+
+// ADMIN - Ocupación por carrera
+const ocupacionPorCarrera = ref([
+  { carrera: 'Software', ocupacion: 45 },
+  { carrera: 'Psicología', ocupacion: 62 },
+  { carrera: 'Derecho', ocupacion: 78 },
+  { carrera: 'Medicina', ocupacion: 92 },
+  { carrera: 'Arquitectura', ocupacion: 55 },
+  { carrera: 'Diseño', ocupacion: 48 },
+  { carrera: 'Contaduría', ocupacion: 71 }
+])
+
+// ADMIN - Alertas
+const alertas = ref([
+  {
+    tipo: 'warning',
+    icono: '⚠️',
+    titulo: 'Conflicto de Horario',
+    descripcion: 'Aula B-201 reservada dos veces el lunes a las 10am.'
+  },
+  {
+    tipo: 'error',
+    icono: '�',
+    titulo: 'Baja Inscripción',
+    descripcion: 'El grupo de "Cálculo Avanzado" tiene solo 3 estudiantes.'
+  },
+  {
+    tipo: 'success',
+    icono: '✅',
+    titulo: 'Aprobación Pendiente',
+    descripcion: 'Nueva materia "IA Generativa" espera aprobación.'
+  }
+])
+
+// ADMIN - Últimas inscripciones
+const ultimasInscripciones = ref([
+  {
+    estudiante: 'Sofía Vergara',
+    carrera: 'Ingeniería de Software',
+    fecha: '2024-08-15',
+    estado: 'Aprobada'
+  },
+  {
+    estudiante: 'Juan Carlos Pérez',
+    carrera: 'Medicina',
+    fecha: '2024-08-15',
+    estado: 'Aprobada'
+  },
+  {
+    estudiante: 'Valentina Rojas',
+    carrera: 'Arquitectura',
+    fecha: '2024-08-14',
+    estado: 'Pendiente'
+  },
+  {
+    estudiante: 'Mateo González',
+    carrera: 'Derecho',
+    fecha: '2024-08-13',
+    estado: 'Aprobada'
+  }
+])
 
 // PROFESOR
 const profesorCards = ref({
   totalGrupos: 5,
   periodoActual: '2025-2',
-  disponibilidadBloques: 24,
+  disponibilidadBloques: 24
 })
+
 const profesorTabla = ref([
   { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', cupo_max: 35 },
-  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I',  seccion: 'B',  cupo_max: 30 },
-  { periodo: '2025-1', codigo: 'MAT-102', materia: 'Cálculo II', seccion: '02', cupo_max: 30 },
+  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', cupo_max: 30 },
+  { periodo: '2025-1', codigo: 'MAT-102', materia: 'Cálculo II', seccion: '02', cupo_max: 30 }
 ])
 
 // ESTUDIANTE
-const estudianteCards = ref({
+const estudianteStats = ref({
   periodoActual: '2025-2',
-  inscripciones: 4,
-  cuposDisponibles: 588,
-  preferencias: {
-    turno_preferido: 'MANANA',
-    compactacion: 7,
-    evitar_dias: ['VIE', 'SAB'],
-  }
+  misInscripciones: 4,
+  cuposDisponibles: 588
 })
-const estudianteTabla = ref([
-  { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', profesor: 'A. Ramírez' },
-  { periodo: '2025-2', codigo: 'PRO-120', materia: 'Programación I', seccion: 'A', profesor: 'L. Paredes' },
-  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', profesor: 'C. Taveras' },
+
+const estudiantePreferencias = ref([
+  { label: 'Turno Preferido', value: 'Mañana' },
+  { label: 'Compactación', value: '7 horas/día' },
+  { label: 'Evitar Días', value: 'Viernes, Sábado' }
 ])
 
-// ===== HEADERS REUSABLES =====
-const hdrGrupos = [
-  { key: 'periodo', label: 'Periodo' },
-  { key: 'codigo', label: 'Código' },
-  { key: 'materia', label: 'Materia' },
-  { key: 'seccion', label: 'Sección' },
-  { key: 'cupo_max', label: 'Cupo' },
-]
+const estudianteMaterias = ref([
+  { periodo: '2025-2', codigo: 'MAT-101', materia: 'Cálculo I', seccion: '01', profesor: 'A. Ramírez' },
+  { periodo: '2025-2', codigo: 'PRO-120', materia: 'Programación I', seccion: 'A', profesor: 'L. Paredes' },
+  { periodo: '2025-2', codigo: 'FIS-110', materia: 'Física I', seccion: 'B', profesor: 'C. Taveras' }
+])
 
-const hdrInscripciones = [
-  { key: 'periodo', label: 'Periodo' },
-  { key: 'codigo', label: 'Código' },
-  { key: 'materia', label: 'Materia' },
-  { key: 'seccion', label: 'Sección' },
-  { key: 'profesor', label: 'Profesor' },
-]
+function logout() {
+  auth.logout()
+  router.push('/login')
+}
+
+onMounted(() => {
+  // Load data based on role
+  if (role.value === 'ADMIN') {
+    loadAdminDashboard()
+  } else if (role.value === 'PROFESOR') {
+    loadProfesorDashboard()
+  } else {
+    loadEstudianteDashboard()
+  }
+})
+
+async function loadAdminDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar stats
+    const { data: stats } = await http.get('/admin/dashboard/stats')
+    if (stats) adminStats.value = stats
+  } catch (e) {
+    console.error('Error loading admin dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadProfesorDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar datos del profesor
+    const { data: stats } = await http.get('/profesor/dashboard/stats')
+    if (stats) profesorCards.value = stats
+  } catch (e) {
+    console.error('Error loading profesor dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadEstudianteDashboard() {
+  if (auth.isDummyMode) return
+  loading.value = true
+  try {
+    // Cargar datos del estudiante
+    const { data: stats } = await http.get('/estudiante/dashboard/stats')
+    if (stats) estudianteStats.value = stats
+  } catch (e) {
+    console.error('Error loading estudiante dashboard:', e)
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <Sidebar>
     <!-- Header -->
-    <header class="bg-white border-b">
+    <header class="sticky top-0 bg-white border-b border-gray-200 z-20 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-sky-400">PlanificaEDU</h1>
-          <p class="text-gray-500">
-            Hola, <span class="font-medium">{{ nombre }}</span>
-            — Rol: <span class="uppercase">{{ role }}</span>
-          </p>
+          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
         </div>
-        <div class="flex items-center gap-2">
-          <button class="px-4 py-2 rounded-xl bg-sky-400 hover:bg-sky-500 text-white font-medium transition">Acción</button>
+        <div class="flex items-center gap-4">
+          <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </button>
+          <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm">
+            {{ nombre.substring(0, 2).toUpperCase() }}
+          </div>
+          <div>
+            <p class="text-sm font-bold text-gray-900">{{ nombre }}</p>
+            <p class="text-gray-500 text-sm mt-1">{{ role === 'ADMIN' ? 'Administrador' : role }}</p>
+          </div>
         </div>
       </div>
     </header>
 
-    <!-- Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- ADMIN -->
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-12">
+      <!-- ADMIN VIEW -->
       <section v-if="role === 'ADMIN'" class="space-y-8">
-        <!-- Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard label="Usuarios" :value="adminCards.usuarios.total"
-                    :sublabel="`Profesores: ${adminCards.usuarios.profesores} · Estudiantes: ${adminCards.usuarios.estudiantes}`" />
-          <StatCard label="Carreras" :value="adminCards.academico.carreras"
-                    :sublabel="`Materias: ${adminCards.academico.materias}`" />
-          <StatCard label="Periodos" :value="adminCards.academico.periodos"
-                    :sublabel="`Actual: ${adminCards.ofertaActual.periodo}`" />
-          <StatCard label="Grupos (periodo)" :value="adminCards.ofertaActual.grupos"
-                    :sublabel="`Inscripciones: ${adminCards.ofertaActual.inscripciones}`" />
+          <StatCard
+            label="Total Usuarios"
+            :value="adminStats.totalUsuarios"
+            sublabel="Profesores: 36 · Estudiantes: 92"
+          />
+          <StatCard
+            label="Carreras Activas"
+            :value="adminStats.carrerasActivas"
+            sublabel="Materias: 154"
+          />
+          <StatCard
+            label="Período Actual"
+            :value="adminStats.periodoActual"
+            sublabel="Grupos: 47"
+          />
+          <StatCard
+            label="Grupos Abiertos"
+            :value="adminStats.gruposAbiertos"
+            sublabel="Cupos: 588"
+          />
         </div>
 
-        <!-- Cupos -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div class="bg-white rounded-2xl shadow p-6 lg:col-span-2">
-            <SectionTitle title="Cupos del periodo" />
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="p-4 border rounded-xl">
-                <p class="text-gray-500 text-sm">Cupos totales</p>
-                <p class="text-2xl font-bold text-sky-400">{{ adminCards.ofertaActual.cuposTotales }}</p>
-              </div>
-              <div class="p-4 border rounded-xl">
-                <p class="text-gray-500 text-sm">Cupos disponibles</p>
-                <p class="text-2xl font-bold text-sky-400">{{ adminCards.ofertaActual.cuposDisponibles }}</p>
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-900">Ocupación por Carrera</h3>
+              <span class="text-green-600 text-sm font-semibold">↑ +5.2%</span>
+            </div>
+            <p class="text-gray-500 text-sm mb-6">Estudiantes inscritos este semestre.</p>
+
+            <div class="h-72 bg-gradient-to-b from-sky-50 to-sky-100 rounded-lg flex items-end justify-around px-4 py-8 gap-2">
+              <div v-for="item in ocupacionPorCarrera" :key="item.carrera" class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full bg-sky-300 rounded-t" :style="{ height: item.ocupacion * 2 + 'px' }"></div>
+                <p class="text-xs text-gray-600 font-medium">{{ item.carrera }}</p>
               </div>
             </div>
-            <p class="text-xs text-gray-400 mt-3">* Datos de ejemplo</p>
           </div>
 
-          <div class="bg-white rounded-2xl shadow p-6">
-            <SectionTitle title="Acciones rápidas" subtitle="(demo)" />
-            <ul class="mt-3 space-y-2 text-sm text-gray-600">
-              <li>• Crear periodo</li>
-              <li>• Crear grupo</li>
-              <li>• Ver inscripciones</li>
-            </ul>
+          <!-- Alertas y Notificaciones -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Alertas y Notificaciones</h3>
+            <div class="space-y-3">
+              <div
+                v-for="(alerta, idx) in alertas"
+                :key="idx"
+                class="flex gap-3 p-3 border rounded-lg"
+                :class="{
+                  'bg-yellow-50 border-yellow-200': alerta.tipo === 'warning',
+                  'bg-red-50 border-red-200': alerta.tipo === 'error',
+                  'bg-green-50 border-green-200': alerta.tipo === 'success'
+                }"
+              >
+                <span class="text-xl flex-shrink-0">{{ alerta.icono }}</span>
+                <div>
+                  <p class="font-semibold text-sm text-gray-900">{{ alerta.titulo }}</p>
+                  <p class="text-xs text-gray-600">{{ alerta.descripcion }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- Recent Inscriptions -->
+        <TableCard
+          title="Últimas Inscripciones"
+          :headers="[
+            { key: 'estudiante', label: 'ESTUDIANTE' },
+            { key: 'carrera', label: 'CARRERA' },
+            { key: 'fecha', label: 'FECHA' },
+            { key: 'estado', label: 'ESTADO' },
+          ]"
+          :rows="ultimasInscripciones"
+        />
       </section>
 
-      <!-- PROFESOR -->
+      <!-- PROFESOR VIEW -->
       <section v-else-if="role === 'PROFESOR'" class="space-y-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <StatCard label="Grupos asignados" :value="profesorCards.totalGrupos" />
-          <StatCard label="Periodo actual" :value="profesorCards.periodoActual" />
-          <StatCard label="Bloques de disponibilidad" :value="profesorCards.disponibilidadBloques" />
+          <StatCard label="Grupos Asignados" :value="profesorCards.totalGrupos" />
+          <StatCard label="Período Actual" :value="profesorCards.periodoActual" />
+          <StatCard label="Bloques Disponibles" :value="profesorCards.disponibilidadBloques" />
         </div>
 
-        <TableCard title="Tus grupos (recientes)" :headers="hdrGrupos" :rows="profesorTabla" emptyText="No tienes grupos asignados." />
+        <TableCard
+          title="Tus Grupos (Recientes)"
+          :headers="[
+            { key: 'periodo', label: 'Período' },
+            { key: 'codigo', label: 'Código' },
+            { key: 'materia', label: 'Materia' },
+            { key: 'seccion', label: 'Sección' },
+            { key: 'cupo_max', label: 'Cupo' },
+          ]"
+          :rows="profesorTabla"
+        />
       </section>
 
-      <!-- ESTUDIANTE -->
+      <!-- ESTUDIANTE VIEW -->
       <section v-else class="space-y-8">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <StatCard label="Periodo actual" :value="estudianteCards.periodoActual" />
-          <StatCard label="Mis inscripciones" :value="estudianteCards.inscripciones" />
-          <StatCard label="Cupos disponibles (global)" :value="estudianteCards.cuposDisponibles" />
+          <StatCard label="Período Actual" :value="estudianteStats.periodoActual" />
+          <StatCard label="Mis Inscripciones" :value="estudianteStats.misInscripciones" />
+          <StatCard label="Cupos Disponibles" :value="estudianteStats.cuposDisponibles" />
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div class="bg-white rounded-2xl shadow p-6">
-            <SectionTitle title="Mis preferencias" />
-            <div class="text-gray-700 text-sm">
-              <p><span class="text-gray-500">Turno: </span>{{ estudianteCards.preferencias.turno_preferido }}</p>
-              <p><span class="text-gray-500">Compactación: </span>{{ estudianteCards.preferencias.compactacion }}</p>
-              <p><span class="text-gray-500">Evitar días: </span>
-                <span v-if="estudianteCards.preferencias.evitar_dias?.length">
-                  {{ estudianteCards.preferencias.evitar_dias.join(', ') }}
-                </span>
-                <span v-else>—</span>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Mis Preferencias</h3>
+            <div class="space-y-3 text-sm text-gray-700">
+              <p v-for="pref in estudiantePreferencias" :key="pref.label">
+                <span class="text-gray-500">{{ pref.label }}:</span> {{ pref.value }}
               </p>
             </div>
           </div>
 
-          <TableCard title="Mis inscripciones"
-                     :headers="hdrInscripciones"
-                     :rows="estudianteTabla"
-                     emptyText="Aún no te has inscrito en grupos." />
+          <TableCard
+            title="Mis Inscripciones"
+            :headers="[
+              { key: 'periodo', label: 'Período' },
+              { key: 'codigo', label: 'Código' },
+              { key: 'materia', label: 'Materia' },
+              { key: 'seccion', label: 'Sección' },
+              { key: 'profesor', label: 'Profesor' },
+            ]"
+            :rows="estudianteMaterias"
+          />
         </div>
       </section>
     </main>
-  </div>
+  </Sidebar>
 </template>
+
+<style scoped>
+/* small adjustments to match existing UI */
+</style>
+

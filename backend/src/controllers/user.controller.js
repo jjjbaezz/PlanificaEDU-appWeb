@@ -57,6 +57,10 @@ export const updateRole = async (req, res) => {
     }
 
     // (Opcional) validar que solo dueño o admin cambie su rol
+    if (req.user.id !== id && req.user.rol !== 'ADMIN') {
+      return res.status(403).json({ message: 'Sin permisos para modificar este rol' });
+    }
+
     const updated = await prisma.usuarios.update({
       where: { id },
       data: { rol }
@@ -74,6 +78,10 @@ export const upsertPreferences = async (req, res) => {
   try {
     const { id } = req.params;
     const { turno_preferido, compactacion, evitar_dias, pesos } = req.body;
+
+    if (req.user.id !== id && req.user.rol !== 'ADMIN') {
+      return res.status(403).json({ message: 'Sin permisos para modificar estas preferencias' });
+    }
 
     const result = await prisma.preferencias_usuario.upsert({
       where: { usuario_id: id },
