@@ -85,7 +85,7 @@ export const update = async (req, res) => {
         const {periodo_id, estado,score,creado_por,created_at}= req.body;
 
 
-        const newPeriod = await prisma.periodos.update({
+        const newPeriod = await prisma.horarios.update({
             where:{id: String(id)},
             data:{
                 periodo_id,
@@ -125,7 +125,7 @@ export const remove = async (req, res) => {
             where:{id:String(id)},
        });
 
-        return res.status(200).json({message: "Periodo eliminada correctamente"});
+        return res.status(200).json({message: "Horario eliminada correctamente"});
     }
     catch(err){
         console.error(err);

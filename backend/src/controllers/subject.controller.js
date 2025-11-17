@@ -80,7 +80,6 @@ export const update = async (req, res) => {
         const {id} = req.params;
         const {carrera_id, codigo,nombre,creditos,}= req.body;
 
-
         const newSubject = await prisma.materias.update({
             where:{id: String(id)},
             data:{
@@ -90,7 +89,6 @@ export const update = async (req, res) => {
                 creditos,
             }
         });
-
         return res.status(200).json(newSubject);
     }
     catch(err){
@@ -107,15 +105,12 @@ export const update = async (req, res) => {
 }
 
 
-// REMOVE /subjects
+// Delete /subjects
 
 export const remove = async (req, res) => {
 
     try{
         const {id} = req.params;
-       
-
-
        await prisma.materias.delete({
             where:{id:String(id)},
        });
