@@ -48,6 +48,10 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
+  if (to.query.resetSession === '1') {
+    auth.logout()
+    return { path: '/login', replace: true }
+  }
   if (!auth.user && auth.token) {
     await auth.me()
   }
