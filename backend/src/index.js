@@ -12,6 +12,7 @@ import classrooomRoutes from './routes/classroom.routes.js';
 import buildingRoutes from './routes/building.routes.js';
 import periodRoutes from './routes/period.routes.js';
 import scheduleRoutes from './routes/schedule.routes.js';
+import enrollmentRoutes from './routes/enrollment.routes.js';
 
 
 
@@ -51,6 +52,7 @@ app.use('/careers', careerRoutes);
 app.use('/buildings', buildingRoutes);
 app.use('/periods', periodRoutes);
 app.use('/schedules', scheduleRoutes);
+app.use('/enrollments', enrollmentRoutes);
 
 
 
