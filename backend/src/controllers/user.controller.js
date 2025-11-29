@@ -27,6 +27,52 @@ export const createUser = async (req, res) => {
 };
 import { prisma } from '../prisma.js';
 
+
+
+// GET /users
+export const getAll = async (req, res) => {
+
+    try {
+
+        const users = await prisma.usuarios.findMany({
+            // select:{id:true,nombre:true,email:true,rol:true,carrera_id:true,activo:true},
+            take:100 }); 
+
+        if(users.length === 0){
+            return res.status(204).json({message: "No hay usuarios disponibles"});
+        }
+        return res.status(200).json({users});
+    }
+    catch(err){
+        console.error(err);
+        return res.status(500).json({message: "Error al obtener los usuarios", error: err.message});
+    }
+  
+
+}
+
+// GET /users/:id
+export const getById = async (req, res) => {
+
+    try {
+
+      const {id}= req.params;
+
+        const user = await prisma.usuarios.findUnique({where:{id:String(id)}}); 
+        if(!user){
+            return res.status().json({message: "Usuario no encontrada"});
+        }
+        return res.status(200).json({user});
+    }
+    catch(err){
+        console.error(err);
+        return res.status(500).json({message: "Error al obtener el usuario", error: err.message});
+    }
+  
+
+}
+
+
 // PATCH /users/:id/role
 export const updateRole = async (req, res) => {
   try {

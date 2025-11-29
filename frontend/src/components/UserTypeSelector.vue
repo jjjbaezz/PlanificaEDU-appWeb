@@ -1,14 +1,24 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useUsersStore } from '../stores/users'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const users = useUsersStore()
+const auth = useAuthStore()
 
 async function choose(rol) {
   try {
-    await users.updateRole(rol) 
-    router.push('/onboarding/preferences')
+    // Si estamos en modo dummy, actualizar localmente
+    if (auth.isDummyMode) {
+      const updatedUser = { ...auth.user, rol: rol }
+      auth._setSession({ user: updatedUser, token: auth.token, isDummyMode: true })
+      router.push('/onboarding/preferences')
+    } else {
+      // Usuario real, hacer llamada al backend
+      await users.updateRole(rol)
+      router.push('/onboarding/preferences')
+    }
   } catch (e) {
     alert(e.response?.data?.message || e.message)
   }

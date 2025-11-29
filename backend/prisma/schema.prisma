@@ -10,34 +10,46 @@ datasource db {
 model usuarios {
   id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombre                  String
+  password_hash           String?
   email                   String                    @unique
   rol                     rol_enum
   carrera_id              String?                   @db.Uuid
   activo                  Boolean                   @default(true)
   created_at              DateTime                  @default(now()) @db.Timestamptz(6)
-  password_hash           String?
   auditoria               auditoria[]
   disponibilidad_profesor disponibilidad_profesor[]
+  grupos                  grupos[]
+  horarios                horarios[]
+  inscripciones           inscripciones[]
+  preferencias_usuario    preferencias_usuario?
+  profesores              profesores?
+  carreras                carreras?                 @relation(fields: [carrera_id], references: [id], onUpdate: NoAction)
 }
 
 model preferencias_usuario {
-  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String      @unique @db.Uuid
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String            @unique @db.Uuid
   turno_preferido turno_enum?
-  compactacion    Int         @default(5)
+  compactacion    Int               @default(5)
+  evitar_dias     dia_semana_enum[]
   pesos           Json?
-  evitar_dias     String[]    @db.VarChar(3)
+  usuarios        usuarios          @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model grupos {
-  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  periodo_id  String @db.Uuid
-  materia_id  String @db.Uuid
-  profesor_id String @db.Uuid
-  seccion     String
-  cupo_max    Int
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  periodo_id      String            @db.Uuid
+  materia_id      String            @db.Uuid
+  profesor_id     String            @db.Uuid
+  seccion         String
+  cupo_max        Int
+  materias        materias          @relation(fields: [materia_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  periodos        periodos          @relation(fields: [periodo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuarios        usuarios          @relation(fields: [profesor_id], references: [id], onUpdate: NoAction)
+  horario_detalle horario_detalle[]
+  inscripciones   inscripciones[]
 
   @@unique([periodo_id, materia_id, seccion], map: "uq_grupo_oferta")
   @@index([materia_id], map: "idx_grupos_materia")
@@ -47,12 +59,16 @@ model grupos {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model horario_detalle {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  horario_id String   @db.Uuid
-  grupo_id   String   @db.Uuid
-  aula_id    String   @db.Uuid
-  bloque_id  String   @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamptz(6)
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  horario_id       String           @db.Uuid
+  grupo_id         String           @db.Uuid
+  aula_id          String           @db.Uuid
+  bloque_id        String           @db.Uuid
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  aulas            aulas            @relation(fields: [aula_id], references: [id], onUpdate: NoAction)
+  bloques_horarios bloques_horarios @relation(fields: [bloque_id], references: [id], onUpdate: NoAction)
+  grupos           grupos           @relation(fields: [grupo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  horarios         horarios         @relation(fields: [horario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([horario_id, aula_id, bloque_id], map: "uq_hd_aula_bloque")
   @@unique([horario_id, grupo_id], map: "uq_hd_grupo")
@@ -64,12 +80,15 @@ model horario_detalle {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model horarios {
-  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  periodo_id String              @db.Uuid
-  estado     estado_horario_enum @default(QUEUED)
-  score      Decimal?            @db.Decimal(10, 4)
-  creado_por String?             @db.Uuid
-  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  periodo_id      String              @db.Uuid
+  estado          estado_horario_enum @default(QUEUED)
+  score           Decimal?            @db.Decimal(10, 4)
+  creado_por      String?             @db.Uuid
+  created_at      DateTime            @default(now()) @db.Timestamptz(6)
+  horario_detalle horario_detalle[]
+  usuarios        usuarios?           @relation(fields: [creado_por], references: [id], onUpdate: NoAction)
+  periodos        periodos            @relation(fields: [periodo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -78,6 +97,8 @@ model inscripciones {
   usuario_id String   @db.Uuid
   grupo_id   String   @db.Uuid
   created_at DateTime @default(now()) @db.Timestamptz(6)
+  grupos     grupos   @relation(fields: [grupo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuarios   usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([usuario_id, grupo_id], map: "uq_inscripcion")
   @@index([grupo_id], map: "idx_inscripciones_grupo")
@@ -86,36 +107,46 @@ model inscripciones {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model materias {
-  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  carrera_id String? @db.Uuid
-  codigo     String  @unique
-  nombre     String
-  creditos   Int     @default(0)
+  id                                                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrera_id                                          String?          @db.Uuid
+  codigo                                              String           @unique
+  nombre                                              String
+  creditos                                            Int              @default(0)
+  grupos                                              grupos[]
+  carreras                                            carreras?        @relation(fields: [carrera_id], references: [id], onUpdate: NoAction)
+  prerrequisitos_prerrequisitos_materia_idTomaterias  prerrequisitos[] @relation("prerrequisitos_materia_idTomaterias")
+  prerrequisitos_prerrequisitos_requiere_idTomaterias prerrequisitos[] @relation("prerrequisitos_requiere_idTomaterias")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model periodos {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre       String   @unique
-  fecha_inicio DateTime @db.Date
-  fecha_fin    DateTime @db.Date
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre       String     @unique
+  fecha_inicio DateTime   @db.Date
+  fecha_fin    DateTime   @db.Date
+  activo       Boolean    @default(false)
+  grupos       grupos[]
+  horarios     horarios[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model prerrequisitos {
-  materia_id  String @db.Uuid
-  requiere_id String @db.Uuid
+  materia_id                                    String   @db.Uuid
+  requiere_id                                   String   @db.Uuid
+  materias_prerrequisitos_materia_idTomaterias  materias @relation("prerrequisitos_materia_idTomaterias", fields: [materia_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  materias_prerrequisitos_requiere_idTomaterias materias @relation("prerrequisitos_requiere_idTomaterias", fields: [requiere_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([materia_id, requiere_id])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model profesores {
-  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  usuario_id      String @unique @db.Uuid
-  carga_max_horas Int    @default(20)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id      String   @unique @db.Uuid
+  carga_max_horas Int      @default(20)
+  usuarios        usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -139,6 +170,7 @@ model aulas {
   tipo                tipo_aula_enum        @default(TEORIA)
   edificios           edificios             @relation(fields: [edificio_id], references: [id], onUpdate: NoAction)
   disponibilidad_aula disponibilidad_aula[]
+  horario_detalle     horario_detalle[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -151,15 +183,18 @@ model bloques_horarios {
   turno                   turno_enum?
   disponibilidad_aula     disponibilidad_aula[]
   disponibilidad_profesor disponibilidad_profesor[]
+  horario_detalle         horario_detalle[]
 
   @@unique([dia, hora_inicio, hora_fin], map: "uq_bloque")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model carreras {
-  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  codigo String @unique
-  nombre String
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo   String     @unique
+  nombre   String
+  materias materias[]
+  usuarios usuarios[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

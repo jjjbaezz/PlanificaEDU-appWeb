@@ -99,25 +99,47 @@
   </template>
   
   <script setup lang="ts">
-  import { ref } from 'vue'
-  import { RouterLink, useRoute } from 'vue-router'
+  import { ref, computed } from 'vue'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
+  import { useAuthStore } from '../stores/auth'
   
   const isOpen = ref(false)
   const $route = useRoute()
-  
-  const menuItems = [
-    { id: 1, label: 'Dashboard', path: '/dashboard', icon: 'DashboardIcon.svg' },
-    { id: 2, label: 'Usuarios', path: '/usuarios', icon: 'UsuariosIcon.svg' },
-    { id: 3, label: 'Asignaturas', path: '/asignaturas', icon: 'AsignaturasIcon.svg' },
-    { id: 4, label: 'Carreras', path: '/carreras', icon: 'CarrerasIcon.svg' },
-    { id: 5, label: 'Horarios', path: '/horarios', icon: 'HorariosIcon.svg' }
+  const router = useRouter()
+  const auth = useAuthStore()
+
+  type MenuItem = {
+    id: string
+    label: string
+    path: string
+    icon: string
+    roles?: string[]
+  }
+
+  const baseMenu: MenuItem[] = [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'DashboardIcon.svg' },
+    { id: 'usuarios', label: 'Usuarios', path: '/usuarios', icon: 'UsuariosIcon.svg', roles: ['ADMIN'] },
+    { id: 'asignaturas', label: 'Asignaturas', path: '/asignaturas', icon: 'AsignaturasIcon.svg' },
+    { id: 'carreras', label: 'Carreras', path: '/admin/carreras', icon: 'CarrerasIcon.svg', roles: ['ADMIN'] },
+    { id: 'horarios', label: 'Horarios', path: '/admin/horarios', icon: 'HorariosIcon.svg', roles: ['ADMIN'] },
+    { id: 'admin-enrollments', label: 'Inscripciones', path: '/admin/inscripciones', icon: 'InscripcionesIcon.svg', roles: ['ADMIN'] },
+    { id: 'student-enroll', label: 'Inscripción', path: '/inscripcion', icon: 'InscripcionIcon.svg', roles: ['ESTUDIANTE'] }
   ]
+
+  const menuItems = computed(() => {
+    const role = auth.user?.rol
+    return baseMenu.filter((item) => {
+      if (!item.roles) return true
+      if (!role) return false
+      return item.roles.includes(role)
+    })
+  })
   
   const isDashboardActive = (itemPath: string): boolean => {
     if (itemPath === '/dashboard') {
       return $route.path === '/dashboard' || $route.path === '/dashboardProfesor'
     }
-    return $route.path === itemPath
+    return $route.path.startsWith(itemPath)
   }
   
   const getIconPath = (iconName: string): string => {
@@ -125,7 +147,8 @@
   }
   
   const handleLogout = (): void => {
-    console.log('Cerrando sesión...')
+    auth.logout()
+    router.push('/login')
   }
   </script>
   

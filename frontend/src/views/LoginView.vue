@@ -17,6 +17,44 @@ const error = ref('') // error del server (credenciales inválidas, etc.)
 const router = useRouter()
 const auth = useAuthStore()
 
+// Easter egg: 5 clicks en el logo
+const clickCount = ref(0)
+const clickTimeout = ref(null)
+
+function handleLogoClick() {
+  clickCount.value++
+  console.log(`Click #${clickCount.value}`)
+
+  // Reset del contador después de 2 segundos sin clicks
+  if (clickTimeout.value) clearTimeout(clickTimeout.value)
+  clickTimeout.value = setTimeout(() => {
+    clickCount.value = 0
+  }, 2000)
+
+  // Si llega a 5 clicks, accede con datos dummy
+  if (clickCount.value === 5) {
+    console.log('¡Easter egg activado! Redirigiendo al dashboard...')
+    loginWithDummyData()
+    clickCount.value = 0
+  }
+}
+
+function loginWithDummyData() {
+  // Crear sesión dummy sin necesidad de backend - con rol ya definido
+  const dummyUser = {
+    id: 'dummy-user-id',
+    nombre: 'Usuario Demo',
+    email: 'demo@planificaedu.com',
+    rol: 'ADMIN',
+    activo: true
+  }
+  const dummyToken = 'dummy-token-for-development'
+
+  // Activar modo dummy
+  auth._setSession({ user: dummyUser, token: dummyToken, isDummyMode: true })
+  router.push('/dashboard')
+}
+
 function runFieldValidation(name) {
   const val = name === 'email' ? email.value : password.value
   const res = validateField(val, loginSchema[name])
@@ -68,7 +106,13 @@ const onSubmit = async (e) => {
     <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div class="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16">
         <div class="w-full lg:w-1/2 text-center lg:text-left">
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-sky-400 mb-4">PlanificaEDU</h1>
+          <h1
+            @click="handleLogoClick"
+            class="text-5xl sm:text-6xl lg:text-7xl font-bold text-sky-400 mb-4 cursor-pointer select-none transition-transform hover:scale-105"
+            title="PlanificaEDU"
+          >
+            PlanificaEDU
+          </h1>
           <p class="text-xl sm:text-2xl text-gray-500">Sistema de planificación académica</p>
         </div>
 

@@ -42,7 +42,7 @@ export const register = async (req, res) => {
 // POST /auth/login
 export const login = async (req, res) => {
 
-    const user = req.user;
+  const user = req.user;
   const token = signToken(user);
   return res.json({ user, token });
 };
