@@ -6,6 +6,9 @@ import passport from 'passport';
 import './config/passport.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import professorRoutes from './routes/professor.routes.js';
+import studentsRoutes from './routes/students.routes.js';
+import timeBlocksRoutes from './routes/timeBlocks.routes.js';
 import subjectRoutes from './routes/subject.routes.js';
 import careerRoutes  from './routes/career.routes.js';
 import classrooomRoutes from './routes/classroom.routes.js';
@@ -48,11 +51,14 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/subjects', subjectRoutes);
 app.use('/classrooms', classrooomRoutes);
+app.use('/students', studentsRoutes);
 app.use('/careers', careerRoutes);
 app.use('/buildings', buildingRoutes);
+app.use('/professors', professorRoutes);
 app.use('/periods', periodRoutes);
 app.use('/schedules', scheduleRoutes);
 app.use('/enrollments', enrollmentRoutes);
+app.use('/time-blocks', timeBlocksRoutes);
 
 
 

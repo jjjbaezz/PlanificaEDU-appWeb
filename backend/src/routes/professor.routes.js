@@ -7,10 +7,30 @@ import {
   getProfile,
   updateProfile,
   getSchedule,
+  getAllProfessors,
+  getProfessorById,
+  createProfessor,
+  updateProfessor,
+  deleteProfessor
 } from '../controllers/professor.controller.js';
 
 const router = Router();
 
+// CRUD básico de profesores
+// GET /professors
+router.get('/', requireAuth, getAllProfessors);
+
+// GET /professors/:id
+router.get('/:id', requireAuth, getProfessorById);
+
+// POST /professors
+router.post('/', requireAuth, createProfessor);
+
+// PUT /professors/:id
+router.put('/:id', requireAuth, updateProfessor);
+
+// DELETE /professors/:id
+router.delete('/:id', requireAuth, deleteProfessor);
 
 // GET /professors/:id/availability - Obtener disponibilidad del profesor
 router.get('/:id/availability', requireAuth, getAvailability);

@@ -1,3 +1,30 @@
+import bcrypt from 'bcryptjs';
+// POST /users
+export const createUser = async (req, res) => {
+  try {
+    const { nombre, email, password, rol } = req.body;
+    if (!nombre || !email || !password || !rol) {
+      return res.status(400).json({ message: 'Faltan campos requeridos' });
+    }
+    const exists = await prisma.usuarios.findUnique({ where: { email } });
+    if (exists) {
+      return res.status(409).json({ message: 'El usuario ya existe' });
+    }
+    const password_hash = await bcrypt.hash(password, 12);
+    const user = await prisma.usuarios.create({
+      data: {
+        nombre,
+        email,
+        password_hash,
+        rol
+      }
+    });
+    const { password_hash: _, ...safe } = user;
+    return res.status(201).json({ user: safe });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error creando usuario', error: err.message });
+  }
+};
 import { prisma } from '../prisma.js';
 
 
