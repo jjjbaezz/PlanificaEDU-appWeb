@@ -1,3 +1,35 @@
+// GET /students/:id/preferences - Consultar preferencias de cualquier estudiante por ID
+export const getStudentPreferences = async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const preferences = await studentsService.getMyPreferences(studentId);
+    if (!preferences) {
+      return res.status(404).json({ message: 'Preferencias no encontradas para el estudiante' });
+    }
+    return res.status(200).json({
+      message: 'Preferencias consultadas exitosamente',
+      preferences,
+    });
+  } catch (err) {
+    console.error('Error consultando preferencias de estudiante:', err);
+    return res.status(500).json({ message: 'Error al consultar preferencias', error: err.message });
+  }
+};
+// DELETE /students/:id - Eliminar estudiante físicamente
+export const deleteStudent = async (req, res) => {
+  if (!ensureAdmin(req, res)) return;
+
+  try {
+    await studentsService.deleteStudent(req.params.id);
+    return res.status(204).send();
+  } catch (err) {
+    console.error('Error eliminando estudiante:', err);
+    const statusCode = err.message === 'Estudiante no encontrado' ? 404 : 500;
+    return res.status(statusCode).json({
+      message: err.message,
+    });
+  }
+};
 import * as studentsService from '../services/students.service.js';
 
 // Helper: ensure admin
@@ -168,6 +200,27 @@ export const updateMyProfile = async (req, res) => {
     return res.status(statusCode).json({
       message: err.message,
     });
+  }
+};
+
+// GET /students/profile/preferences - Consultar preferencias propias
+export const getMyPreferences = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+    const preferences = await studentsService.getMyPreferences(userId);
+    if (!preferences) {
+      return res.status(404).json({ message: 'Preferencias no encontradas' });
+    }
+    return res.status(200).json({
+      message: 'Preferencias consultadas exitosamente',
+      preferences,
+    });
+  } catch (err) {
+    console.error('Error consultando preferencias:', err);
+    return res.status(500).json({ message: 'Error al consultar preferencias', error: err.message });
   }
 };
 

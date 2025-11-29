@@ -1,3 +1,21 @@
+export const getMyPreferences = async (userId) => {
+  const preferences = await prisma.preferencias_usuario.findUnique({
+    where: { usuario_id: userId },
+  });
+  return preferences;
+};
+// Eliminar estudiante físicamente
+export const deleteStudent = async (id) => {
+  const existingStudent = await prisma.usuarios.findUnique({
+    where: { id, rol: 'ESTUDIANTE' },
+  });
+  if (!existingStudent) {
+    throw new Error('Estudiante no encontrado');
+  }
+  await prisma.usuarios.delete({
+    where: { id },
+  });
+};
 import { prisma } from '../prisma.js';
 
 const validDays = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'];

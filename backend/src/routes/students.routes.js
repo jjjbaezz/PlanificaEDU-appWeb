@@ -10,10 +10,12 @@ import {
   getMyProfile,
   updateMyProfile,
   updateMyPreferences,
+  getMyPreferences,
+  getStudentPreferences,
+  deleteStudent,
 } from '../controllers/students.controller.js';
 
 const router = Router();
-
 // Todas las rutas requieren autenticación
 router.use(requireAuth);
 
@@ -24,6 +26,8 @@ router.get('/profile/me', getMyProfile);
 // PUT /students/profile/me - Editar mi perfil (datos básicos, NO rol)
 router.put('/profile/me', updateMyProfile);
 
+// GET /students/profile/preferences - Consultar mis preferencias
+router.get('/profile/preferences', getMyPreferences);
 // PUT /students/profile/preferences - Actualizar mis preferencias
 router.put('/profile/preferences', updateMyPreferences);
 
@@ -31,6 +35,8 @@ router.put('/profile/preferences', updateMyPreferences);
 // GET /students - Listado con filtros
 router.get('/', listStudents);
 
+// GET /students/:id/preferences - Consultar preferencias de cualquier estudiante por ID
+router.get('/:id/preferences', getStudentPreferences);
 // GET /students/:id - Obtener estudiante por ID
 router.get('/:id', getStudentById);
 
@@ -39,6 +45,9 @@ router.post('/', createStudent);
 
 // PUT /students/:id - Actualizar datos básicos
 router.put('/:id', updateStudent);
+
+// DELETE /students/:id - Eliminar estudiante físicamente
+router.delete('/:id', deleteStudent);
 
 // PATCH /students/:id/deactivate - Desactivar estudiante
 router.patch('/:id/deactivate', deactivateStudent);
