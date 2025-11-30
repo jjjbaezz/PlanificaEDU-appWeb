@@ -1,7 +1,7 @@
 import { prisma } from '../prisma.js';
 
 
-// GET /subjects
+// GET /shcedules
 export const getAll = async (req, res) => {
 
     try {
@@ -20,7 +20,27 @@ export const getAll = async (req, res) => {
 
 }
 
-// GET /subjects/id
+export const generate = async (req, res) => {
+  try {
+    const { periodo_id } = req.body;
+    if (!periodo_id) return res.status(400).json({ message: 'periodo_id es obligatorio' });
+
+    const adminId = req.user?.id ?? null; // requireAuth middleware usualmente pone req.user
+    const result = await generateSchedule(periodo_id, {}, adminId);
+
+    return res.status(201).json({
+      message: 'Generación completada',
+      horario: result.horario,
+      summary: { assigned: result.assignments.length, unassigned: result.unassigned.length, score: result.score },
+      unassigned: result.unassigned
+    });
+  } catch (err) {
+    console.error('Generate schedule error:', err);
+    return res.status(500).json({ message: 'Error generando horario', error: err.message });
+  }
+};
+
+// GET /shcedules/id
 export const getById = async (req, res) => {
 
     try {
@@ -40,105 +60,6 @@ export const getById = async (req, res) => {
 
 }
 
-// POST /subjects
-
-export const create = async (req, res) => {
-
-    try{
-        const {periodo_id, estado,score,creado_por,created_at}= req.body;
-
-        if(!periodo_id || !estado || !score || !creado_por || !created_at ){
-
-            return res.status(400).json({message:"Faltan datos obligatorios del horario"});
-        }
-        
-        const newSchedule = await prisma.horarios.create({
-            data:{
-                periodo_id,
-                estado,
-                score,
-                creado_por,
-                created_at
-
-
-              
-            }
-        });
-
-        return res.status(201).json(newSchedule);
-    }
-    catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: "Error al crear el horario", 
-            error: err.message
-        });
-    }
-}
-
-// PUT /subjects
-
-export const update = async (req, res) => {
-
-    try{
-        const {id} = req.params;
-        const {periodo_id, estado,score,creado_por,created_at}= req.body;
-
-
-        const newPeriod = await prisma.horarios.update({
-            where:{id: String(id)},
-            data:{
-                periodo_id,
-                estado,
-                score,
-                creado_por,
-                created_at
-            }
-        });
-
-        return res.status(200).json(newPeriod);
-    }
-    catch(err){
-        console.error(err);
-
-        if (err.code === "P2025") {
-        return res.status(404).json({ message: "Periodo no encontrada" });
-    }
-        return res.status(500).json({
-            message: "Error al atualizar el periodo", 
-            error: err.message
-        });
-    }
-}
-
-
-// REMOVE /subjects
-
-export const remove = async (req, res) => {
-
-    try{
-        const {id} = req.params;
-       
-
-
-       await prisma.horarios.delete({
-            where:{id:String(id)},
-       });
-
-        return res.status(200).json({message: "Horario eliminada correctamente"});
-    }
-    catch(err){
-        console.error(err);
-
-        if (err.code === "P2025") {
-        return res.status(404).json({ message: "Horario no encontrada" });
-    }
-        return res.status(500).json({
-            message: "Error al eliminar el Horario", 
-            error: err.message
-        });
-    }
-}
 
 
 

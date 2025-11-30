@@ -1,168 +1,66 @@
-import { prisma } from '../prisma.js';
+import carreraService from '../services/careers.service.js';
 
+export const listCarreras = async (req, res) => {
+  try {
+    const carreras = await carreraService.getAllCarreras();
+    return res.status(200).json(carreras);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Error al listar carreras' });
+  }
+};
 
-// GET /careers
-export const getAll = async (req, res) => {
-
-    try {
-
-        const careers = await prisma.carreras.findMany();
-        if(careers.length === 0){
-            return res.status(204).json({message: "No hay carreras disponibles"});
-        }
-        return res.status(200).json({careers});
+export const createCarrera = async (req, res) => {
+  try {
+    const { codigo, nombre } = req.body;
+    if (!codigo || !nombre) {
+      return res.status(400).json({ error: 'Código y nombre son requeridos' });
     }
-    catch(err){
-        console.error(err);
-        return res.status(500).json({message: "Error al obtener las carreras", error: err.message});
+    const nuevaCarrera = await carreraService.createCarrera({ codigo, nombre });
+    return res.status(201).json({ message: 'Carrera creada exitosamente', carrera: nuevaCarrera });
+  } catch (error) {
+    if (error.code === 'P2002' || error.message === 'DUPLICATE') {
+      return res.status(409).json({ error: 'El código o nombre de carrera ya existe' });
     }
-  
+    console.error(error);
+    return res.status(500).json({ error: 'Error al crear carrera' });
+  }
+};
 
-}
-
-// GET /careers/id
-export const getById = async (req, res) => {
-
-    try {
-
-        const { id } = req.params;
-        const careers = await prisma.carreras.findUnique({where:{id:String(id)}});
-
-        if(!careers){
-            return res.status().json({message: "Carrera no encontrada"});
-        }
-        return res.status(200).json({careers});
+export const updateCarrera = async (req, res) => {
+  try {
+    const carreraId = String(req.params.id);
+    const { codigo, nombre } = req.body;
+    if (!codigo && !nombre) {
+      return res.status(400).json({ error: 'No hay datos para actualizar' });
     }
-    catch(err){
-        console.error(err);
-        return res.status(500).json({message: "Error al obtener la carrera", error: err.message});
+    const carreraActualizada = await carreraService.updateCarrera(carreraId, { codigo, nombre });
+    return res.status(200).json({ message: 'Carrera actualizada', carrera: carreraActualizada });
+  } catch (error) {
+    if (error.message === 'DUPLICATE') {
+      return res.status(409).json({ error: 'Código o nombre duplicado' });
     }
-  
-
-}
-
-// POST /careers
-
-export const create = async (req, res) => {
-
-    try{
-        const {codigo, nombre}= req.body;
-
-        if(!codigo || !nombre){
-
-            return res.status(400).json({message:"Faltan datos obligatorios de la carrera"});
-        }
-        
-        const newCareer = await prisma.carreras.create({
-            data:{
-                codigo,
-                nombre,
-            }
-        });
-
-        return res.status(201).json(newCareer);
+    if (error.message === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Carrera no encontrada' });
     }
-    catch(err){
-        console.error(err);
-        return res.status(500).json({
-            message: "Error al crear la carrera", 
-            error: err.message
-        });
+    console.error(error);
+    return res.status(500).json({ error: 'Error al actualizar carrera' });
+  }
+};
+
+export const deleteCarrera = async (req, res) => {
+  try {
+    const carreraId = String(req.params.id);
+    await carreraService.deleteCarrera(carreraId);
+    return res.status(204).send();
+  } catch (error) {
+    if (error.message === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Carrera no encontrada' });
     }
-}
-
-// PUT /careers
-
-export const update = async (req, res) => {
-
-    try{
-        const {id} = req.params;
-        const {codigo, nombre}= req.body;
-
-
-        const newCareer = await prisma.carreras.update({
-            where:{id: String(id)},
-            data:{
-                codigo,
-                nombre,
-           
-            }
-        });
-
-        return res.status(200).json(newCareer);
+    if (error.message === 'FORBIDDEN_DELETE') {
+      return res.status(400).json({ error: 'No se puede eliminar la carrera porque tiene elementos asociados' });
     }
-    catch(err){
-        console.error(err);
-
-        if (err.code === "P2025") {
-        return res.status(404).json({ message: "Carrera no encontrada" });
-    }
-        return res.status(500).json({
-            message: "Error al atualizar la carrera", 
-            error: err.message
-        });
-    }
-}
-
-// PATCH /careers
-
-export const partialUpdate = async (req, res) => {
-
-    try{
-        const {id} = req.params;
-        const data= req.body;
-
-
-
-        const updatedCareers = await prisma.carreras.update({
-        where: { id },
-        data, 
-        });
-
-        return res.status(200).json(updatedCareers);
-    }
-    catch(err){
-        console.error(err);
-
-        if (err.code === "P2025") {
-        return res.status(404).json({ message: "Carrera no encontrada" });
-    }
-        return res.status(500).json({
-            message: "Error al atualizar la carrera", 
-            error: err.message
-        });
-    }
-}
-
-
-
-// REMOVE /careers
-
-export const remove = async (req, res) => {
-
-    try{
-        const {id} = req.params;
-       
-
-
-       await prisma.carreras.delete({
-            where:{id:String(id)},
-       });
-
-        return res.status(200).json({message: "Carrera eliminada correctamente"});
-    }
-    catch(err){
-        console.error(err);
-
-        if (err.code === "P2025") {
-        return res.status(404).json({ message: "Carrera no encontrada" });
-    }
-        return res.status(500).json({
-            message: "Error al eliminar la carrera", 
-            error: err.message
-        });
-    }
-}
-
-
-
+    console.error(error);
+    return res.status(500).json({ error: 'Error al eliminar carrera' });
+  }
+};
