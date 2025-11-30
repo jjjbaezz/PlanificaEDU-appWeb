@@ -125,6 +125,7 @@ model periodos {
   nombre       String     @unique
   fecha_inicio DateTime   @db.Date
   fecha_fin    DateTime   @db.Date
+  activo       Boolean    @default(false)
   grupos       grupos[]
   horarios     horarios[]
 }
