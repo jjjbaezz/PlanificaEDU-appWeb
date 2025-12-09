@@ -7,6 +7,7 @@ export const useUsersStore = defineStore('users', {
   state: () => ({
     saving: false,
     error: null,
+    preferences: null,
   }),
   actions: {
     async updateRole(rol) {
@@ -30,11 +31,36 @@ export const useUsersStore = defineStore('users', {
       this.saving = true; this.error = null
       try {
         const { data } = await http.put(`/users/${auth.userId}/preferences`, payload)
+        this.preferences = data.preferencias
         return data.preferencias
       } catch (e) {
         this.error = e.response?.data?.message || e.message
         throw e
       } finally { this.saving = false }
     },
+
+    async fetchPreferences(){
+      const auth = useAuthStore();
+
+      if(!auth.userId) throw new Error('No existe un usuario logueado ahora mismo');
+
+      this.error = null;
+
+      try {
+        const { data } = await http.get(`/users/${auth.userId}/preferences`)
+
+        this.preferences = data.preferencias
+
+        return data.preferencias
+
+      } catch (error) {
+        if (e.response?.status === 404) {
+          this.preferences = null
+          return null
+        }
+        this.error = e.response?.data?.message || e.message
+        throw e
+      }
+    }
   },
 })
