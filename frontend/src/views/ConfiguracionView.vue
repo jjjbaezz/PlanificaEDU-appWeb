@@ -17,11 +17,11 @@
         <!-- Profile Picture -->
         <div class="mb-6">
           <div class="flex flex-col items-center">
-            <img 
+             <!--<img 
               src="/placeholder.svg?height=100&width=100" 
               alt="Foto de perfil" 
               class="w-24 h-24 rounded-full object-cover border-4 border-gray-200 mb-3"
-            />
+            /> -->
             <a href="#" class="text-blue-500 hover:text-blue-700 text-sm font-medium">
               Cambiar foto
             </a>
