@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+
 // POST /users
 export const createUser = async (req, res) => {
   try {

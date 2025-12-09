@@ -22,6 +22,8 @@ import DashboardProfesor from '../views/DashboardProfesor.vue'
 
 
 const routes = [
+
+  
   { path: '/', redirect: '/login' },
 
   { path: '/login', component: LoginView, meta: { guestOnly: true } },
