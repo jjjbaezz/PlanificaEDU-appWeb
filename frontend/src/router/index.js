@@ -24,6 +24,8 @@ import DashboardProfesor from '../views/DashboardProfesor.vue'
 const routes = [
   { path: '/', redirect: '/login' },
 
+    { path: '/xd', component: HorariosView },
+
   { path: '/login', component: LoginView, meta: { guestOnly: true } },
   { path: '/register', component: RegisterView, meta: { guestOnly: true } },
 
