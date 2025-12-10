@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import Sidebar from '../components/Sidebar.vue'
+import Sidebar from '../../components/Sidebar.vue'
 
 const filtros = ref('')
 const carreraFiltro = ref('todas')
