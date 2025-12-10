@@ -157,7 +157,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import Sidebar from '../components/Sidebar.vue'
+import Sidebar from '../../components/Sidebar.vue'
 
 const profesor = ref({
   nombre: 'Alejandro',
