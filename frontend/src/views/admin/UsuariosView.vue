@@ -34,11 +34,11 @@ const currentPage = ref(1)
 const itemsPerPage = 10
 
 const usuariosFiltrados = computed(() => {
-  return usuarios.value.filter(usuario => {
+  const filtrados = usuarios.value.filter(usuario => {
     const queryMatch = searchQuery.value
-      ? usuario.nombre.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        usuario.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        usuario.rol.toLowerCase().includes(searchQuery.value.toLowerCase())
+      ? usuario.nombre?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        usuario.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        usuario.rol?.toLowerCase().includes(searchQuery.value.toLowerCase())
       : true
 
     const estadoMatch = filtroEstado.value !== '' ? usuario.activo === (filtroEstado.value === 'activo') : true
@@ -46,6 +46,8 @@ const usuariosFiltrados = computed(() => {
 
     return queryMatch && estadoMatch && rolMatch
   })
+
+  return filtrados.sort((a, b) => (b.activo === true) - (a.activo === true)) // true primero
 })
 
 const usuariosPaginados = computed(() => {
@@ -93,7 +95,8 @@ async function loadUsuarios() {
 }
 
 function getIniciales(nombre) {
-  const partes = nombre.split(' ')
+  if (!nombre || typeof nombre !== 'string') return '--'
+  const partes = nombre.trim().split(' ')
   return partes.length >= 2
     ? `${partes[0][0]}${partes[1][0]}`.toUpperCase()
     : nombre.substring(0, 2).toUpperCase()
@@ -158,6 +161,7 @@ async function guardarUsuario() {
         }
       }
       cerrarModal()
+      await loadUsuarios()
       alert('Usuario actualizado correctamente')
     } else {
       const payload = {
@@ -189,7 +193,7 @@ async function eliminarUsuario(usuario) {
 
   loading.value = true
   try {
-    const { data } = await http.patch(`/users/${usuario.id}`, { activo: false })
+    const { data } = await http.patch(`/users/${usuario.id}/deactivate`, { activo: false })
     const index = usuarios.value.findIndex(u => u.id === usuario.id)
     if (index !== -1) {
       usuarios.value[index] = {
@@ -198,6 +202,8 @@ async function eliminarUsuario(usuario) {
         colorBadge: getColorBadge(data.rol)
       }
     }
+    await loadUsuarios()
+
   } catch (e) {
     console.error('Error marcando usuario como inactivo:', e)
     alert(e.response?.data?.message || 'Error al eliminar el usuario')
@@ -278,34 +284,57 @@ onMounted(() => {
         />
       </div>
 
-      <!-- Search and Actions Bar -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div class="flex-1 relative w-full md:w-auto">
-            <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Buscar por nombre, email o rol..."
-              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          
-          <div class="flex gap-3 flex-wrap">
-            <button
-              @click="abrirModalCrear"
-              class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Nuevo usuario
-            </button>
-          </div>
-        </div>
-      </div>
+     <!-- Search and Actions Bar -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+  <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+    <div class="flex-1 relative w-full md:w-auto">
+      <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Buscar por nombre, email o rol..."
+        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+
+    <div class="flex gap-3 flex-wrap items-center">
+      <!-- Filtro por Rol -->
+      <select
+        v-model="filtroRol"
+        class="px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Todos los roles</option>
+        <option value="ESTUDIANTE">Estudiante</option>
+        <option value="PROFESOR">Profesor</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+
+      <!-- Filtro por Estado -->
+      <select
+        v-model="filtroEstado"
+        class="px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Todos los estados</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+      </select>
+
+      <!-- Botón Crear -->
+      <button
+        @click="abrirModalCrear"
+        class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nuevo usuario
+      </button>
+    </div>
+  </div>
+</div>
+
 
       <!-- Users Table -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

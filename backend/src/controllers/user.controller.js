@@ -157,7 +157,7 @@ export const toggleUserStatus = async (req, res) => {
   }
 };
 
-// PATCH /users/:id/deactivate
+// PATCH /users/:id/
 export const deactivateUser = async (req, res) => {
   try {
     const { id } = req.params;
