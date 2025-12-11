@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import http from "../../services/http";
+import careersService from "../../services/careers";
 import CareerFormModal from "../../components/admin/CareerFormModal.vue";
 import CareerItem from "../../components/admin/CareerItem.vue";
 import ConfirmDeleteModal from "../../components/admin/ConfirmDeleteModal.vue";
@@ -67,10 +67,8 @@ async function fetchCarreras() {
   loading.value = true;
   error.value = null;
   try {
-    const res = await http.get("/admin/carreras", {
-      params: { search: search.value, page: page.value, limit: limit.value },
-    });
-    items.value = res.data.items || [];
+    const res = await careersService.fetchCareers({ search: search.value, page: page.value, limit: limit.value });
+    items.value = res.data.items || res.data.careers || [];
     meta.value = res.data.meta || {
       page: page.value,
       limit: limit.value,
@@ -124,7 +122,7 @@ async function performDelete() {
   const id = deletingItem.value?.id;
   if (!id) return;
   try {
-    await http.delete(`/admin/carreras/${id}`);
+    await careersService.deleteCareer(id);
     await onDeleted();
     alert("Carrera eliminada");
   } catch (e) {
@@ -139,12 +137,9 @@ function loadMore() {
 
   page.value += 1;
   loading.value = true;
-  http
-    .get("/admin/carreras", {
-      params: { search: search.value, page: page.value, limit: limit.value },
-    })
+  careersService.fetchCareers({ search: search.value, page: page.value, limit: limit.value })
     .then((res) => {
-      items.value = items.value.concat(res.data.items || []);
+      items.value = items.value.concat(res.data.items || res.data.careers || []);
       meta.value = res.data.meta || meta.value;
     })
     .catch((e) => {

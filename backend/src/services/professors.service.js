@@ -1,6 +1,16 @@
 // Obtener todos los profesores
 export async function getAllProfessors() {
-  return await prisma.profesores.findMany();
+  const profesores = await prisma.profesores.findMany({
+    include: {
+      usuarios: true
+    }
+  });
+  return profesores.map(p => ({
+    id: p.id,
+    usuario_id: p.usuario_id,
+    nombre: p.usuarios?.nombre || '',
+    carga_max_horas: p.carga_max_horas
+  }));
 }
 
 // Obtener profesor por ID
@@ -18,7 +28,7 @@ export async function createProfessor(data) {
   const usuario = await prisma.usuarios.create({
     data: {
       nombre: data.nombre,
-      email: data.correo,
+      email: data.email,
       rol: 'PROFESOR',
       password_hash: data.password_hash || 'temporal'
     }

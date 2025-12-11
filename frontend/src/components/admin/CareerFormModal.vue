@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from "vue";
+import careersService from "../../services/careers";
 import http from "../../services/http";
 
 const props = defineProps({
@@ -15,6 +16,7 @@ const visible = computed({
 });
 
 const form = ref({
+  codigo: "",
   nombre: "",
   descripcion: "",
   activo: true,
@@ -88,7 +90,7 @@ async function fetchSubjects() {
   try {
     const res = await http.get("/subjects", { params: { limit: 1000 } });
     const raw = res.data;
-    subjects.value = raw?.data ?? raw?.items ?? raw ?? [];
+    subjects.value = raw?.items ?? raw?.data ?? raw?.subjects ?? raw ?? [];
   } catch (e) {
     console.error("Error obteniendo materias", e);
   }
@@ -179,6 +181,12 @@ watch(visible, async (isOpen) => {
 function validate() {
   errors.value = {};
 
+  if (!form.value.codigo || form.value.codigo.trim().length < 2) {
+    errors.value.codigo = "El código debe tener al menos 2 caracteres.";
+  } else if (form.value.codigo.length > 20) {
+    errors.value.codigo = "Máximo 20 caracteres.";
+  }
+
   if (!form.value.nombre || form.value.nombre.trim().length < 3) {
     errors.value.nombre = "El nombre debe tener al menos 3 caracteres.";
   } else if (form.value.nombre.length > 120) {
@@ -201,6 +209,7 @@ async function submit() {
   saving.value = true;
 
   const payload = {
+    codigo: form.value.codigo,
     nombre: form.value.nombre,
     descripcion: form.value.descripcion,
     activo: form.value.activo,
@@ -211,9 +220,9 @@ async function submit() {
   try {
     let res;
     if (isEdit.value) {
-      res = await http.put(`/admin/carreras/${props.initialData.id}`, payload);
+      res = await careersService.updateCareer(props.initialData.id, payload);
     } else {
-      res = await http.post("/admin/carreras", payload);
+      res = await careersService.createCareer(payload);
     }
     emit("saved", res.data);
     visible.value = false;
@@ -263,6 +272,24 @@ function close() {
           </header>
 
           <div class="space-y-7">
+                        <div>
+                          <label
+                            for="codigo"
+                            class="block text-sm font-semibold text-slate-700"
+                          >
+                            Código de la carrera
+                          </label>
+                          <input
+                            id="codigo"
+                            v-model="form.codigo"
+                            type="text"
+                            placeholder="Ej: INF"
+                            class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-200"
+                          />
+                          <p v-if="errors.codigo" class="mt-1 text-xs text-red-500">
+                            {{ errors.codigo }}
+                          </p>
+                        </div>
             <div>
               <label
                 for="nombre"
