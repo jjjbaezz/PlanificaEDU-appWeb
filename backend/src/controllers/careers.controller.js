@@ -5,19 +5,18 @@ import { prisma } from '../prisma.js';
 export const getAll = async (req, res) => {
 
     try {
-
+        console.log('[GET /careers] Request received');
         const careers = await prisma.carreras.findMany();
-        if(careers.length === 0){
+        console.log('[GET /careers] Careers found:', Array.isArray(careers) ? careers.length : 0);
+        if (!Array.isArray(careers) || careers.length === 0) {
             return res.status(204).json({message: "No hay carreras disponibles"});
         }
         return res.status(200).json({careers});
     }
     catch(err){
-        console.error(err);
+        console.error('[GET /careers] Error:', err);
         return res.status(500).json({message: "Error al obtener las carreras", error: err.message});
     }
-  
-
 }
 
 // GET /careers/id

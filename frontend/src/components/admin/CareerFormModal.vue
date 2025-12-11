@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, computed } from "vue";
+import careersService from "../../services/careers";
 import http from "../../services/http";
 
 const props = defineProps({
@@ -211,9 +212,9 @@ async function submit() {
   try {
     let res;
     if (isEdit.value) {
-      res = await http.put(`/admin/carreras/${props.initialData.id}`, payload);
+      res = await careersService.updateCareer(props.initialData.id, payload);
     } else {
-      res = await http.post("/admin/carreras", payload);
+      res = await careersService.createCareer(payload);
     }
     emit("saved", res.data);
     visible.value = false;
