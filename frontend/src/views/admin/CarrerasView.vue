@@ -122,7 +122,7 @@ async function performDelete() {
   const id = deletingItem.value?.id;
   if (!id) return;
   try {
-    await http.delete(`/admin/carreras/${id}`);
+    await careersService.deleteCareer(id);
     await onDeleted();
     alert("Carrera eliminada");
   } catch (e) {

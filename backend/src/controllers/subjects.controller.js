@@ -13,6 +13,10 @@ const ensureAdmin = (user) => {
 export const listSubjects = async (req, res) => {
   try {
     const result = await subjectsService.listSubjects(req.query);
+    if (result.subjects) {
+      const { subjects, ...rest } = result;
+      return res.json({ ...rest, items: subjects });
+    }
     return res.json(result);
   } catch (error) {
     console.error('Error listando materias:', error);

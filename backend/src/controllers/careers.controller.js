@@ -6,7 +6,17 @@ export const getAll = async (req, res) => {
 
     try {
         console.log('[GET /careers] Request received');
-        const careers = await prisma.carreras.findMany();
+        const { search } = req.query;
+        let where = {};
+        if (search && search.trim().length > 0) {
+            where = {
+                OR: [
+                    { nombre: { contains: search, mode: 'insensitive' } },
+                    { codigo: { contains: search, mode: 'insensitive' } }
+                ]
+            };
+        }
+        const careers = await prisma.carreras.findMany({ where });
         console.log('[GET /careers] Careers found:', Array.isArray(careers) ? careers.length : 0);
         if (!Array.isArray(careers) || careers.length === 0) {
             return res.status(204).json({message: "No hay carreras disponibles"});
@@ -45,15 +55,14 @@ export const getById = async (req, res) => {
 export const create = async (req, res) => {
 
     try{
-        const {codigo, nombre}= req.body;
+        const {codigo, nombre} = req.body;
 
         if(!codigo || !nombre){
-
             return res.status(400).json({message:"Faltan datos obligatorios de la carrera"});
         }
-        
+
         const newCareer = await prisma.carreras.create({
-            data:{
+            data: {
                 codigo,
                 nombre,
             }

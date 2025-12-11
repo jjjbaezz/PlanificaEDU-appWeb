@@ -1,19 +1,19 @@
 import http from './http';
 
 export const fetchCareers = (params = {}) =>
-  http.get('/admin/carreras', { params });
+  http.get('/careers', { params });
 
 export const fetchCareerById = (id) =>
-  http.get(`/admin/carreras/${id}`);
+  http.get(`/careers/${id}`);
 
 export const createCareer = (data) =>
-  http.post('/admin/carreras', data);
+  http.post('/careers', data);
 
 export const updateCareer = (id, data) =>
-  http.put(`/admin/carreras/${id}`, data);
+  http.put(`/careers/${id}`, data);
 
 export const deleteCareer = (id) =>
-  http.delete(`/admin/carreras/${id}`);
+  http.delete(`/careers/${id}`);
 
 export default {
   fetchCareers,
