@@ -1,505 +1,548 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useAuthStore } from '../../stores/auth'
-import { useRouter } from 'vue-router'
-import http from '../../services/http'
+import { ref, computed } from "vue";
+import Sidebar from "../../components/Sidebar.vue";
+import { useAuthStore } from "../../stores/auth";
+import SubjectFormModal from "../../components/admin/SubjectFormModal.vue";
 
-const auth = useAuthStore()
-const router = useRouter()
+const auth = useAuthStore();
 
-const searchQuery = ref('')
-const loading = ref(false)
-const error = ref(null)
+const search = ref("");
+const tipoFilter = ref("Todos");
+const semestreFilter = ref("Todos");
 
-// Menú de usuario
-const showUserMenu = ref(false)
-const nombre = computed(() => auth.user?.nombre || 'Usuario')
-
-// Modal para crear/editar materia
-const showModal = ref(false)
-const isEditing = ref(false)
-const currentMateria = ref({
-  id: null,
-  nombre: '',
-  duracion: '',
-  cuposMaximos: ''
-})
-
-// Datos dummy de materias (para cuando el backend no responde)
 const materias = ref([
-  { id: 1, nombre: 'Cálculo Diferencial', duracion: '4h', cuposMaximos: 40 },
-  { id: 2, nombre: 'Programación Orientada a Objetos', duracion: '3h', cuposMaximos: 35 },
-  { id: 3, nombre: 'Bases de Datos', duracion: '3h', cuposMaximos: 35 },
-  { id: 4, nombre: 'Física Mecánica', duracion: '4h', cuposMaximos: 50 }
-])
+  {
+    id: 1,
+    nombre: "Cálculo Diferencial",
+    codigo: "MAT-101",
+    creditos: 5,
+    carrera: "Ingeniería de Software",
+    tipo: "Presencial",
+    semestre: "1",
+    icon: "math",
+    prerequisitos: ["Precálculo MAT-101", "Contabilidad Financiera MAT-121"],
+    desbloquea: "Calculo Intermedio MAT-201",
+  },
+  {
+    id: 2,
+    nombre: "Programación Orientada a Objetos",
+    codigo: "CS-203",
+    creditos: 4,
+    carrera: "Ingeniería de Software",
+    tipo: "Presencial",
+    semestre: "2",
+    icon: "code",
+    prerequisitos: ["Introducción a la Programación CS-101"],
+  },
+  {
+    id: 3,
+    nombre: "Bases de Datos I",
+    codigo: "DB-301",
+    creditos: 4,
+    carrera: "Ingeniería de Software",
+    tipo: "Presencial",
+    semestre: "3",
+    icon: "db",
+    prerequisitos: ["Estructuras de Datos CS-205"],
+  },
+  {
+    id: 4,
+    nombre: "Redes de Computadoras",
+    codigo: "NET-405",
+    creditos: 3,
+    carrera: "Ingeniería de Software",
+    tipo: "Presencial",
+    semestre: "4",
+    icon: "network",
+    prerequisitos: ["Sistemas Operativos SO-302"],
+  },
+]);
 
-// Paginación
-const currentPage = ref(1)
-const itemsPerPage = 10
+const selectedMateria = ref(materias.value[0] || null);
 
-// Materias filtradas por búsqueda
-const materiasFiltradas = computed(() => {
-  if (!searchQuery.value) return materias.value
+const nombre = computed(
+  () => auth.user?.nombre || auth.user?.name || "Nombre Admin"
+);
+const role = computed(() => auth.user?.rol || auth.user?.role || "ADMIN");
 
-  const query = searchQuery.value.toLowerCase()
-  return materias.value.filter(materia =>
-    materia.nombre.toLowerCase().includes(query)
-  )
-})
+const tipoOptions = ["Todos", "Presencial", "Virtual", "Híbrido"];
+const semestreOptions = ["Todos", "1", "2", "3", "4", "5", "6"];
 
-// Materias paginadas
-const materiasPaginadas = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return materiasFiltradas.value.slice(start, end)
-})
+const filteredMaterias = computed(() => {
+  let list = materias.value;
 
-// Total de páginas
-const totalPages = computed(() => {
-  return Math.ceil(materiasFiltradas.value.length / itemsPerPage)
-})
-
-function toggleUserMenu() {
-  showUserMenu.value = !showUserMenu.value
-}
-
-function logout() {
-  auth.logout()
-  router.push('/login')
-}
-
-function goToDashboard() {
-  router.push('/dashboard')
-}
-
-// Cargar materias desde el backend
-async function loadMaterias() {
-  if (auth.isDummyMode) return // Usar datos dummy
-
-  loading.value = true
-  error.value = null
-
-  try {
-    const { data } = await http.get('/admin/materias')
-    if (data) {
-      materias.value = data
-    }
-  } catch (e) {
-    console.error('Error cargando materias:', e)
-    error.value = e.message
-    // Mantener datos dummy como fallback
-  } finally {
-    loading.value = false
-  }
-}
-
-// Abrir modal para crear nueva materia
-function openCreateModal() {
-  isEditing.value = false
-  currentMateria.value = {
-    id: null,
-    nombre: '',
-    duracion: '',
-    cuposMaximos: ''
-  }
-  showModal.value = true
-}
-
-// Abrir modal para editar materia
-function openEditModal(materia) {
-  isEditing.value = true
-  currentMateria.value = { ...materia }
-  showModal.value = true
-}
-
-// Cerrar modal
-function closeModal() {
-  showModal.value = false
-  currentMateria.value = {
-    id: null,
-    nombre: '',
-    duracion: '',
-    cuposMaximos: ''
-  }
-}
-
-// Guardar materia (crear o editar)
-async function saveMateria() {
-  if (!currentMateria.value.nombre || !currentMateria.value.duracion || !currentMateria.value.cuposMaximos) {
-    alert('Por favor completa todos los campos')
-    return
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase();
+    list = list.filter(
+      (m) =>
+        m.nombre.toLowerCase().includes(q) || m.codigo.toLowerCase().includes(q)
+    );
   }
 
-  if (auth.isDummyMode) {
-    // Modo dummy: actualizar datos localmente
-    if (isEditing.value) {
-      const index = materias.value.findIndex(m => m.id === currentMateria.value.id)
-      if (index !== -1) {
-        materias.value[index] = { ...currentMateria.value }
-      }
-    } else {
-      const newId = Math.max(...materias.value.map(m => m.id), 0) + 1
-      materias.value.push({ ...currentMateria.value, id: newId })
-    }
-    closeModal()
-    return
+  if (tipoFilter.value !== "Todos") {
+    list = list.filter((m) => m.tipo === tipoFilter.value);
   }
 
-  loading.value = true
-  try {
-    if (isEditing.value) {
-      // Actualizar materia existente
-      await http.put(`/admin/materias/${currentMateria.value.id}`, currentMateria.value)
-      const index = materias.value.findIndex(m => m.id === currentMateria.value.id)
-      if (index !== -1) {
-        materias.value[index] = { ...currentMateria.value }
-      }
-    } else {
-      // Crear nueva materia
-      const { data } = await http.post('/admin/materias', currentMateria.value)
-      materias.value.push(data)
-    }
-    closeModal()
-  } catch (e) {
-    console.error('Error guardando materia:', e)
-    alert(e.response?.data?.message || e.message || 'Error al guardar la materia')
-  } finally {
-    loading.value = false
+  if (semestreFilter.value !== "Todos") {
+    list = list.filter((m) => m.semestre === semestreFilter.value);
   }
+
+  return list;
+});
+
+function selectMateria(materia) {
+  selectedMateria.value = materia;
+}
+const showForm = ref(false);
+const editingMateria = ref(null);
+
+function onAddMateria() {
+  editingMateria.value = null;
+  showForm.value = true;
 }
 
-// Eliminar materia
-async function deleteMateria(materia) {
-  if (!confirm(`¿Estás seguro de eliminar la materia "${materia.nombre}"?`)) {
-    return
-  }
-
-  if (auth.isDummyMode) {
-    // Modo dummy: eliminar localmente
-    materias.value = materias.value.filter(m => m.id !== materia.id)
-    return
-  }
-
-  loading.value = true
-  try {
-    await http.delete(`/admin/materias/${materia.id}`)
-    materias.value = materias.value.filter(m => m.id !== materia.id)
-  } catch (e) {
-    console.error('Error eliminando materia:', e)
-    alert(e.response?.data?.message || e.message || 'Error al eliminar la materia')
-  } finally {
-    loading.value = false
-  }
+function onEditMateria(materia) {
+  editingMateria.value = materia;
+  showForm.value = true;
 }
 
-function changePage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page
-  }
+function handleSaveMateria(payload) {
+  console.log("Materia guardada (demo):", payload);
 }
 
-onMounted(() => {
-  loadMaterias()
-})
+function onDeleteMateria(materia) {
+  alert(`Acción de eliminar: ${materia.nombre} (solo diseño).`);
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r flex flex-col overflow-y-auto">
-      <!-- Logo -->
-      <div class="p-6 border-b">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-sky-400 rounded-full flex items-center justify-center">
-            <span class="text-white font-bold text-lg">P</span>
-          </div>
-          <h1 class="text-xl font-bold text-gray-800">PlanificaEDU</h1>
-        </div>
-      </div>
-
-      <!-- Menu -->
-      <nav class="flex-1 p-4 space-y-2">
-        <a @click="goToDashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 cursor-pointer">
-          <span>📊</span>
-          <span>Dashboard</span>
-        </a>
-        <RouterLink to="/usuarios" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
-          <span>👥</span>
-          <span>Usuarios</span>
-        </RouterLink>
-        <RouterLink to="/admin/materias" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-sky-50 text-sky-600 font-medium">
-          <span>📚</span>
-          <span>Materias</span>
-        </RouterLink>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
-          <span>🎓</span>
-          <span>Carreras</span>
-        </a>
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
-          <span>🕐</span>
-          <span>Horarios</span>
-        </a>
-      </nav>
-
-      <!-- Footer del sidebar -->
-      <div class="p-4 border-t space-y-2">
-        <RouterLink to="/configuracion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
-          <span>⚙️</span>
-          <span>Configuración</span>
-        </RouterLink>
-        <button
-          @click="logout"
-          class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition">
-          <span>🚪</span>
-          <span>Cerrar sesión</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col">
-      <!-- Header -->
-      <header class="bg-white border-b">
-        <div class="px-8 py-6 flex items-center justify-between">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-800">Gestión de Asignaturas</h2>
-            <p class="text-sm text-gray-500 mt-1">Añade, edita o elimina asignaturas del sistema.</p>
-          </div>
+  <Sidebar>
+    <div class="min-h-screen bg-slate-50">
+      <header
+        class="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm"
+      >
+        <div
+          class="mx-auto flex max-w-7xl items-center justify-end px-4 py-6 sm:px-6 lg:px-8"
+        >
           <div class="flex items-center gap-4">
-            <button class="p-2 rounded-lg hover:bg-gray-100 relative">
-              <span class="text-2xl">🔔</span>
-              <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <div class="relative">
-              <div class="flex items-center gap-3">
-                <div class="text-right">
-                  <p class="text-sm font-medium text-gray-800">{{ nombre }}</p>
-                  <p class="text-xs text-gray-500">Administrador</p>
-                </div>
-                <button
-                  @click="toggleUserMenu"
-                  class="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center hover:bg-sky-200 transition-colors cursor-pointer"
-                  title="Ver opciones de usuario"
-                >
-                  <span class="text-sky-600 font-bold">{{ nombre.charAt(0) }}</span>
-                </button>
-              </div>
-
-              <!-- Menú desplegable -->
-              <div
-                v-if="showUserMenu"
-                class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+            <button
+              type="button"
+              class="rounded-lg p-2 transition-colors hover:bg-gray-100"
+            >
+              <svg
+                class="h-6 w-6 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <div class="px-4 py-3 border-b border-gray-100">
-                  <p class="text-sm font-medium text-gray-800">{{ nombre }}</p>
-                  <p class="text-xs text-gray-500">{{ auth.user?.email }}</p>
-                </div>
-                <RouterLink
-                  to="/configuracion"
-                  class="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition"
-                  @click="showUserMenu = false"
-                >
-                  <span>⚙️</span>
-                  <span>Configuración</span>
-                </RouterLink>
-                <button
-                  @click="logout"
-                  class="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition"
-                >
-                  <span>🚪</span>
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+            </button>
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-200 text-sm font-bold text-orange-700"
+            >
+              {{ nombre?.[0] || "A" }}{{ nombre?.split(" ")?.[1]?.[0] || "" }}
+            </div>
+            <div>
+              <p class="text-sm font-bold text-gray-900">
+                {{ nombre }}
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                {{ role }}
+              </p>
             </div>
           </div>
         </div>
       </header>
 
-      <!-- Content -->
-      <main class="flex-1 p-8 overflow-y-auto">
-        <div class="bg-white rounded-xl shadow-sm p-6">
-          <!-- Search Bar -->
-          <div class="flex items-center justify-between mb-6">
-            <div class="relative flex-1 max-w-md">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Buscar por nombre, apellido o email..."
-                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-transparent outline-none"
-              />
-              <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+      <main class="mx-auto max-w-7xl p-6 md:p-8">
+        <div
+          class="grid gap-8 lg:grid-cols-[minmax(0,2.2fr)_minmax(320px,1fr)] xl:gap-10"
+        >
+          <section>
+            <div
+              class="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between"
+            >
+              <div>
+                <h1 class="text-3xl font-extrabold text-slate-900">
+                  Materias para Ingeniería de Software
+                </h1>
+                <p class="mt-2 text-sm text-slate-500">
+                  Gestiona las materias del programa académico.
+                </p>
+              </div>
+
+              <div class="flex justify-start md:justify-end">
+                <button
+                  type="button"
+                  @click="onAddMateria"
+                  class="inline-flex items-center gap-2 rounded-2xl bg-sky-500 px-7 py-2 text-sm font-semibold text-white shadow-md shadow-sky-200 transition-colors hover:bg-sky-600"
+                >
+                  <span class="text-lg leading-none">+</span>
+                  <span>Añadir Nueva Materia</span>
+                </button>
+              </div>
             </div>
-            <button
-              @click="openCreateModal"
-              class="ml-4 px-6 py-2 bg-sky-400 hover:bg-sky-500 text-white font-medium rounded-lg transition"
-            >
-              + Añadir Usuario
-            </button>
-          </div>
 
-          <!-- Table -->
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b">
-                <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre de Asignatura</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duración (Horas)</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cupos Máximos</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200">
-                <tr v-for="materia in materiasPaginadas" :key="materia.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3 text-sm text-gray-800">{{ materia.nombre }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">{{ materia.duracion }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">{{ materia.cuposMaximos }}</td>
-                  <td class="px-4 py-3">
-                    <div class="flex items-center gap-2">
-                      <button
-                        @click="openEditModal(materia)"
-                        class="text-sky-500 hover:text-sky-700 transition"
-                        title="Editar"
-                        :disabled="loading"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        @click="deleteMateria(materia)"
-                        class="text-red-500 hover:text-red-700 transition"
-                        title="Eliminar"
-                        :disabled="loading"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                <tr v-if="materiasPaginadas.length === 0">
-                  <td colspan="4" class="px-4 py-8 text-center text-gray-500">
-                    No se encontraron materias
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <div
+              class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+            >
+              <div class="flex-1">
+                <div class="relative w-full">
+                  <svg
+                    class="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Buscar por nombre o código..."
+                    class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+              </div>
 
-          <!-- Pagination -->
-          <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 mt-6">
-            <button
-              @click="changePage(currentPage - 1)"
-              :disabled="currentPage === 1"
-              class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="relative">
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:border-sky-300 hover:text-sky-600"
+                  >
+                    <span>Tipo</span>
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  <select
+                    v-model="tipoFilter"
+                    class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                    <option
+                      v-for="tipo in tipoOptions"
+                      :key="tipo"
+                      :value="tipo"
+                    >
+                      {{ tipo }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="relative">
+                  <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:border-sky-300 hover:text-sky-600"
+                  >
+                    <span>Semestre</span>
+                    <svg
+                      class="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  <select
+                    v-model="semestreFilter"
+                    class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  >
+                    <option
+                      v-for="sem in semestreOptions"
+                      :key="sem"
+                      :value="sem"
+                    >
+                      {{ sem === "Todos" ? "Todos" : `Semestre ${sem}` }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 space-y-4">
+              <div
+                v-for="materia in filteredMaterias"
+                :key="materia.id"
+                @click="selectMateria(materia)"
+                :class="[
+                  'flex cursor-pointer items-center justify-between rounded-xl px-6 py-5 shadow-[0_10px_25px_rgba(15,23,42,0.02)] transition-all bg-white',
+                  selectedMateria && selectedMateria.id === materia.id
+                    ? 'border-2 border-sky-400 shadow-[0_18px_40px_rgba(56,189,248,0.25)]'
+                    : 'border border-transparent hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-[0_18px_40px_rgba(15,23,42,0.05)]',
+                ]"
+              >
+                <div class="flex items-center gap-4">
+                  <div
+                    :class="[
+                      'flex h-12 w-12 items-center justify-center rounded-2xl',
+                      selectedMateria && selectedMateria.id === materia.id
+                        ? 'bg-sky-50'
+                        : 'bg-slate-50',
+                    ]"
+                  >
+                    <svg
+                      v-if="materia.icon === 'math'"
+                      :class="[
+                        'h-6 w-6',
+                        selectedMateria && selectedMateria.id === materia.id
+                          ? 'text-sky-500'
+                          : 'text-slate-400',
+                      ]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M15 5H9l4 7-4 7h6" />
+                    </svg>
+
+                    <svg
+                      v-else-if="materia.icon === 'code'"
+                      :class="[
+                        'h-6 w-6',
+                        selectedMateria && selectedMateria.id === materia.id
+                          ? 'text-sky-500'
+                          : 'text-slate-400',
+                      ]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M9 18L3 12l6-6" />
+                      <path d="M15 6l6 6-6 6" />
+                    </svg>
+
+                    <svg
+                      v-else-if="materia.icon === 'db'"
+                      :class="[
+                        'h-6 w-6',
+                        selectedMateria && selectedMateria.id === materia.id
+                          ? 'text-sky-500'
+                          : 'text-slate-400',
+                      ]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <ellipse cx="12" cy="6" rx="6" ry="3" />
+                      <path d="M6 6v6c0 1.66 2.69 3 6 3s6-1.34 6-3V6" />
+                      <path d="M6 12v6c0 1.66 2.69 3 6 3s6-1.34 6-3v-6" />
+                    </svg>
+
+                    <svg
+                      v-else-if="materia.icon === 'network'"
+                      :class="[
+                        'h-6 w-6',
+                        selectedMateria && selectedMateria.id === materia.id
+                          ? 'text-sky-500'
+                          : 'text-slate-400',
+                      ]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="10" y="4" width="4" height="4" rx="1" />
+                      <rect x="4" y="16" width="4" height="4" rx="1" />
+                      <rect x="16" y="16" width="4" height="4" rx="1" />
+                      <path d="M12 8v4" />
+                      <path d="M8 16l4-4 4 4" />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <p class="text-sm font-semibold text-slate-900">
+                      {{ materia.nombre }}
+                    </p>
+                    <p
+                      class="mt-1 text-xs font-medium uppercase tracking-wide text-slate-400"
+                    >
+                      {{ materia.codigo }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <button
+                    type="button"
+                    class="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-sky-500"
+                    @click.stop="onEditMateria(materia)"
+                    aria-label="Editar materia"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M4 20l2.3-.4L17.6 8.3a1 1 0 0 0 0-1.4l-2.5-2.5a1 1 0 0 0-1.4 0L4.4 15.7 4 18v2z"
+                      />
+                      <path d="M14 4l3 3" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="rounded-full p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    @click.stop="onDeleteMateria(materia)"
+                    aria-label="Eliminar materia"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M5 7h14" />
+                      <path d="M10 4h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1z" />
+                      <path
+                        d="M18 7l-.7 11a2 2 0 0 1-2 2H8.7a2 2 0 0 1-2-2L6 7"
+                      />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-if="filteredMaterias.length === 0"
+                class="mt-4 rounded-3xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500"
+              >
+                No se encontraron materias con los filtros actuales.
+              </div>
+            </div>
+          </section>
+
+          <aside>
+            <div
+              class="rounded-[32px] mt-10 bg-white px-7 py-7 shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
             >
-              ←
-            </button>
-            <button
-              @click="changePage(1)"
-              :class="['px-3 py-1 rounded', currentPage === 1 ? 'bg-sky-400 text-white' : 'border border-gray-300 hover:bg-gray-50']"
-            >
-              1
-            </button>
-            <button
-              v-if="totalPages > 1"
-              @click="changePage(2)"
-              :class="['px-3 py-1 rounded', currentPage === 2 ? 'bg-sky-400 text-white' : 'border border-gray-300 hover:bg-gray-50']"
-            >
-              2
-            </button>
-            <button
-              v-if="totalPages > 2"
-              @click="changePage(3)"
-              :class="['px-3 py-1 rounded', currentPage === 3 ? 'bg-sky-400 text-white' : 'border border-gray-300 hover:bg-gray-50']"
-            >
-              3
-            </button>
-            <span v-if="totalPages > 4" class="px-2">...</span>
-            <button
-              v-if="totalPages > 3"
-              @click="changePage(totalPages)"
-              :class="['px-3 py-1 rounded', currentPage === totalPages ? 'bg-sky-400 text-white' : 'border border-gray-300 hover:bg-gray-50']"
-            >
-              {{ totalPages }}
-            </button>
-            <button
-              @click="changePage(currentPage + 1)"
-              :disabled="currentPage === totalPages"
-              class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              →
-            </button>
-          </div>
+              <h2
+                class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400"
+              >
+                Detalles de la Materia
+              </h2>
+
+              <div v-if="selectedMateria" class="mt-6 space-y-6 text-sm">
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">
+                    Nombre de la materia
+                  </p>
+                  <p class="mt-1 text-sm font-semibold text-slate-900">
+                    {{ selectedMateria.nombre }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">
+                    Código de la materia
+                  </p>
+                  <p class="mt-1 text-sm text-slate-800">
+                    {{ selectedMateria.codigo }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">Créditos</p>
+                  <p class="mt-1 text-sm text-slate-800">
+                    {{ selectedMateria.creditos }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">Tipo</p>
+                  <p class="mt-1 text-sm text-slate-800">
+                    {{ selectedMateria.tipo }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">
+                    Carrera a la que pertenece
+                  </p>
+                  <p class="mt-1 text-sm text-slate-800">
+                    {{ selectedMateria.carrera }}
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-xs font-semibold text-slate-400">
+                    Prerrequisitos
+                  </p>
+                  <ul class="mt-1 space-y-1 text-sm text-slate-800">
+                    <li
+                      v-for="(pre, idx) in selectedMateria.prerequisitos"
+                      :key="idx"
+                    >
+                      {{ pre }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div v-else class="mt-6 text-sm text-slate-500">
+                Selecciona una materia de la lista para ver sus detalles.
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
+
+      <SubjectFormModal
+        v-model:open="showForm"
+        :initial-data="editingMateria"
+        @save="handleSaveMateria"
+      />
     </div>
-
-    <!-- Modal para Crear/Editar Materia -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      @click.self="closeModal"
-    >
-      <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">
-          {{ isEditing ? 'Editar Materia' : 'Nueva Materia' }}
-        </h3>
-
-        <form @submit.prevent="saveMateria" class="space-y-4">
-          <!-- Nombre -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de la Asignatura</label>
-            <input
-              v-model="currentMateria.nombre"
-              type="text"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-transparent outline-none"
-              placeholder="Ej: Cálculo Diferencial"
-            />
-          </div>
-
-          <!-- Duración -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Duración (Horas)</label>
-            <input
-              v-model="currentMateria.duracion"
-              type="text"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-transparent outline-none"
-              placeholder="Ej: 4h"
-            />
-          </div>
-
-          <!-- Cupos Máximos -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Cupos Máximos</label>
-            <input
-              v-model.number="currentMateria.cuposMaximos"
-              type="number"
-              required
-              min="1"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-400 focus:border-transparent outline-none"
-              placeholder="Ej: 40"
-            />
-          </div>
-
-          <!-- Botones -->
-          <div class="flex gap-3 mt-6">
-            <button
-              type="button"
-              @click="closeModal"
-              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="flex-1 px-4 py-2 bg-sky-400 hover:bg-sky-500 text-white rounded-lg transition disabled:opacity-50"
-            >
-              {{ loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+  </Sidebar>
 </template>
