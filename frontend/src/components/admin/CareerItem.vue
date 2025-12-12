@@ -16,39 +16,18 @@ const onDelete = () => emit("delete", props.item);
 
 <template>
   <article
-    class="flex items-start justify-between rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-sky-50"
+    class="flex items-start justify-between rounded-2xl bg-white px-7 py-5 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-sky-50"
   >
     <div class="min-w-0 flex-1">
-      <h3 class="text-base font-semibold text-sky-500">
+      <h3 class="text-xl font-bold text-sky-500 mb-1">
         {{ item.nombre }}
       </h3>
-
-      <p v-if="item.descripcion" class="mt-1 text-sm text-slate-500">
+      <p v-if="item.codigo" class="text-base text-slate-700 mb-0.5">
+        <span class="font-semibold">Código:</span> {{ item.codigo }}
+      </p>
+      <p v-if="item.descripcion" class="text-sm text-slate-500 mt-1">
         {{ item.descripcion }}
       </p>
-
-      <div class="mt-4 flex flex-wrap gap-8 text-xs font-medium text-slate-500">
-        <div>
-          <div class="text-lg font-semibold text-slate-900">
-            {{ item.totalAlumnos ?? 0 }}
-          </div>
-          <div class="mt-0.5">Total Alumnos</div>
-        </div>
-
-        <div>
-          <div class="text-lg font-semibold text-slate-900">
-            {{ item.totalProfesores ?? 0 }}
-          </div>
-          <div class="mt-0.5">Total Profesores</div>
-        </div>
-
-        <div>
-          <div class="text-lg font-semibold text-slate-900">
-            {{ item.totalMaterias ?? 0 }}
-          </div>
-          <div class="mt-0.5">Total Materias</div>
-        </div>
-      </div>
     </div>
 
     <div class="ml-4 flex items-start gap-3">
