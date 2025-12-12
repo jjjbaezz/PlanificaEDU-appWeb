@@ -9,7 +9,7 @@ import userRoutes from './routes/user.routes.js';
 import professorRoutes from './routes/professor.routes.js';
 import studentsRoutes from './routes/students.routes.js';
 import timeBlocksRoutes from './routes/timeBlocks.routes.js';
-import subjectRoutes from './routes/subject.routes.js';
+import subjectRoutes from './routes/subjects.routes.js';
 import careerRoutes  from './routes/career.routes.js';
 import classrooomRoutes from './routes/classroom.routes.js';
 import buildingRoutes from './routes/building.routes.js';

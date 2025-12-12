@@ -1,3 +1,4 @@
+os
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
@@ -9,85 +10,52 @@ const auth = useAuthStore()
 const router = useRouter()
 
 const searchQuery = ref('')
+const filtroEstado = ref('')
+const filtroRol = ref('')
 const loading = ref(false)
 const error = ref(null)
 
-// Menú de usuario
 const showUserMenu = ref(false)
 const nombre = computed(() => auth.user?.nombre || 'Usuario')
 
-// Modal para crear/editar usuario
 const showModal = ref(false)
 const isEditing = ref(false)
 const currentUsuario = ref({
   id: null,
   nombre: '',
   email: '',
+  password: '',
   rol: '',
   activo: true
 })
 
-// Modal de contraseña temporal
-const showPasswordModal = ref(false)
-const tempPassword = ref('')
-const showPassword = ref(false)
-const passwordModalTimer = ref(null)
-
-// Datos dummy de usuarios
-const usuarios = ref([
-  {
-    id: 1,
-    nombre: 'Dr. Alejandra Vargas',
-    email: 'a.vargas@unimal.edu',
-    rol: 'PROFESOR',
-    iniciales: 'AV',
-    colorBadge: 'bg-purple-100 text-purple-600',
-    activo: true
-  },
-  {
-    id: 2,
-    nombre: 'Sofía Ramírez',
-    email: 's.ramirez@unimal.edu',
-    rol: 'ESTUDIANTE',
-    iniciales: 'SR',
-    colorBadge: 'bg-green-100 text-green-600',
-    activo: true
-  },
-  {
-    id: 3,
-    nombre: 'Carlos Mendoza',
-    email: 'c.mendoza@unimal.edu',
-    rol: 'ADMIN',
-    iniciales: 'CM',
-    colorBadge: 'bg-blue-100 text-blue-600',
-    activo: true
-  }
-])
-
-// Paginación
+const usuarios = ref([])
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-// Usuarios filtrados por búsqueda
 const usuariosFiltrados = computed(() => {
-  if (!searchQuery.value) return usuarios.value
+  const filtrados = usuarios.value.filter(usuario => {
+    const queryMatch = searchQuery.value
+      ? usuario.nombre?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        usuario.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        usuario.rol?.toLowerCase().includes(searchQuery.value.toLowerCase())
+      : true
 
-  const query = searchQuery.value.toLowerCase()
-  return usuarios.value.filter(usuario =>
-    usuario.nombre.toLowerCase().includes(query) ||
-    usuario.email.toLowerCase().includes(query) ||
-    usuario.rol.toLowerCase().includes(query)
-  )
+    const estadoMatch = filtroEstado.value !== '' ? usuario.activo === (filtroEstado.value === 'activo') : true
+    const rolMatch = filtroRol.value !== '' ? usuario.rol === filtroRol.value : true
+
+    return queryMatch && estadoMatch && rolMatch
+  })
+
+  return filtrados.sort((a, b) => (b.activo === true) - (a.activo === true)) // true primero
 })
 
-// Usuarios paginados
 const usuariosPaginados = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
   return usuariosFiltrados.value.slice(start, end)
 })
 
-// Total de páginas
 const totalPages = computed(() => {
   return Math.ceil(usuariosFiltrados.value.length / itemsPerPage)
 })
@@ -105,42 +73,35 @@ function goToDashboard() {
   router.push('/dashboard')
 }
 
-// Cargar usuarios desde el backend
 async function loadUsuarios() {
-  if (auth.isDummyMode) return // Usar datos dummy
-
   loading.value = true
   error.value = null
 
   try {
-    const { data } = await http.get('/admin/usuarios')
-    if (data) {
-      // Agregar propiedades calculadas para UI
-      usuarios.value = data.map(usuario => ({
-        ...usuario,
-        iniciales: getIniciales(usuario.nombre),
-        colorBadge: getColorBadge(usuario.rol)
-      }))
-    }
+    const { data } = await http.get('/users')
+    const lista = Array.isArray(data) ? data : data.users || []
+    usuarios.value = lista.map(usuario => ({
+      ...usuario,
+      iniciales: getIniciales(usuario.nombre),
+      colorBadge: getColorBadge(usuario.rol)
+    }))
+    
   } catch (e) {
     console.error('Error cargando usuarios:', e)
     error.value = e.message
-    // Mantener datos dummy como fallback
   } finally {
     loading.value = false
   }
 }
 
-// Obtener iniciales del nombre
 function getIniciales(nombre) {
-  const partes = nombre.split(' ')
-  if (partes.length >= 2) {
-    return `${partes[0].charAt(0)}${partes[1].charAt(0)}`.toUpperCase()
-  }
-  return nombre.substring(0, 2).toUpperCase()
+  if (!nombre || typeof nombre !== 'string') return '--'
+  const partes = nombre.trim().split(' ')
+  return partes.length >= 2
+    ? `${partes[0][0]}${partes[1][0]}`.toUpperCase()
+    : nombre.substring(0, 2).toUpperCase()
 }
 
-// Obtener color de badge según el rol
 function getColorBadge(rol) {
   const colores = {
     'ADMIN': 'bg-blue-100 text-blue-600',
@@ -150,126 +111,47 @@ function getColorBadge(rol) {
   return colores[rol] || 'bg-gray-100 text-gray-600'
 }
 
-// Abrir modal para crear usuario
 function abrirModalCrear() {
   isEditing.value = false
   currentUsuario.value = {
     id: null,
     nombre: '',
     email: '',
+    password: '',
     rol: '',
     activo: true
   }
   showModal.value = true
 }
 
-// Abrir modal para editar usuario
 function abrirModalEditar(usuario) {
   isEditing.value = true
   currentUsuario.value = { ...usuario }
   showModal.value = true
 }
 
-// Cerrar modal
 function cerrarModal() {
   showModal.value = false
   currentUsuario.value = {
     id: null,
     nombre: '',
     email: '',
+    password: '',
     rol: '',
     activo: true
   }
 }
 
-// Generar contraseña aleatoria
-function generarPassword() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
-  let password = ''
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return password
-}
-
-// Mostrar modal de contraseña con timer
-function mostrarPasswordModal(password) {
-  tempPassword.value = password
-  showPassword.value = false
-  showPasswordModal.value = true
-
-  // Auto-cerrar después de 10 segundos
-  if (passwordModalTimer.value) {
-    clearTimeout(passwordModalTimer.value)
-  }
-  passwordModalTimer.value = setTimeout(() => {
-    cerrarPasswordModal()
-  }, 10000)
-}
-
-// Cerrar modal de contraseña
-function cerrarPasswordModal() {
-  showPasswordModal.value = false
-  tempPassword.value = ''
-  showPassword.value = false
-  if (passwordModalTimer.value) {
-    clearTimeout(passwordModalTimer.value)
-    passwordModalTimer.value = null
-  }
-}
-
-// Copiar contraseña al portapapeles
-async function copiarPassword() {
-  try {
-    await navigator.clipboard.writeText(tempPassword.value)
-    alert('Contraseña copiada al portapapeles')
-  } catch (e) {
-    console.error('Error copiando contraseña:', e)
-    alert('Error al copiar la contraseña')
-  }
-}
-
-// Guardar usuario (crear o editar)
 async function guardarUsuario() {
   if (!currentUsuario.value.nombre || !currentUsuario.value.email || !currentUsuario.value.rol) {
     alert('Por favor completa todos los campos')
     return
   }
 
-  if (auth.isDummyMode) {
-    // Modo dummy: actualizar lista local
-    if (isEditing.value) {
-      const index = usuarios.value.findIndex(u => u.id === currentUsuario.value.id)
-      if (index !== -1) {
-        usuarios.value[index] = {
-          ...currentUsuario.value,
-          iniciales: getIniciales(currentUsuario.value.nombre),
-          colorBadge: getColorBadge(currentUsuario.value.rol)
-        }
-      }
-    } else {
-      const newId = Math.max(...usuarios.value.map(u => u.id), 0) + 1
-      const password = generarPassword()
-      usuarios.value.push({
-        ...currentUsuario.value,
-        id: newId,
-        iniciales: getIniciales(currentUsuario.value.nombre),
-        colorBadge: getColorBadge(currentUsuario.value.rol)
-      })
-      // Mostrar modal con contraseña generada
-      cerrarModal()
-      mostrarPasswordModal(password)
-      return
-    }
-    cerrarModal()
-    return
-  }
-
   loading.value = true
   try {
     if (isEditing.value) {
-      // Actualizar usuario existente
-      const { data } = await http.patch(`/admin/usuarios/${currentUsuario.value.id}`, currentUsuario.value)
+      const { data } = await http.patch(`/users/${currentUsuario.value.id}`, currentUsuario.value)
       const index = usuarios.value.findIndex(u => u.id === currentUsuario.value.id)
       if (index !== -1) {
         usuarios.value[index] = {
@@ -279,17 +161,24 @@ async function guardarUsuario() {
         }
       }
       cerrarModal()
+      await loadUsuarios()
+      alert('Usuario actualizado correctamente')
     } else {
-      // Crear nuevo usuario
-      const { data } = await http.post('/admin/usuarios', currentUsuario.value)
+      const payload = {
+        nombre: currentUsuario.value.nombre,
+        email: currentUsuario.value.email,
+        rol: currentUsuario.value.rol,
+        password: currentUsuario.value.password,
+        activo: currentUsuario.value.activo
+      }
+      const { data } = await http.post('/users', payload)
       usuarios.value.push({
         ...data.user,
         iniciales: getIniciales(data.user.nombre),
         colorBadge: getColorBadge(data.user.rol)
       })
       cerrarModal()
-      // Mostrar modal con contraseña temporal del backend
-      mostrarPasswordModal(data.tempPassword)
+      alert('Usuario creado correctamente')
     }
   } catch (e) {
     console.error('Error guardando usuario:', e)
@@ -299,24 +188,24 @@ async function guardarUsuario() {
   }
 }
 
-// Eliminar usuario
 async function eliminarUsuario(usuario) {
-  if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${usuario.nombre}?`)) {
-    return
-  }
-
-  if (auth.isDummyMode) {
-    // Modo dummy: eliminar de la lista local
-    usuarios.value = usuarios.value.filter(u => u.id !== usuario.id)
-    return
-  }
+  if (!confirm(`¿Marcar como inactivo al usuario ${usuario.nombre}?`)) return
 
   loading.value = true
   try {
-    await http.delete(`/admin/usuarios/${usuario.id}`)
-    usuarios.value = usuarios.value.filter(u => u.id !== usuario.id)
+    const { data } = await http.patch(`/users/${usuario.id}/deactivate`, { activo: false })
+    const index = usuarios.value.findIndex(u => u.id === usuario.id)
+    if (index !== -1) {
+      usuarios.value[index] = {
+        ...data,
+        iniciales: getIniciales(data.nombre),
+        colorBadge: getColorBadge(data.rol)
+      }
+    }
+    await loadUsuarios()
+
   } catch (e) {
-    console.error('Error eliminando usuario:', e)
+    console.error('Error marcando usuario como inactivo:', e)
     alert(e.response?.data?.message || 'Error al eliminar el usuario')
   } finally {
     loading.value = false
@@ -333,6 +222,11 @@ onMounted(() => {
   loadUsuarios()
 })
 </script>
+
+
+
+
+
 
 <template>
   <Sidebar>
@@ -390,34 +284,57 @@ onMounted(() => {
         />
       </div>
 
-      <!-- Search and Actions Bar -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div class="flex-1 relative w-full md:w-auto">
-            <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Buscar por nombre, email o rol..."
-              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          
-          <div class="flex gap-3 flex-wrap">
-            <button
-              @click="abrirModalCrear"
-              class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Nuevo usuario
-            </button>
-          </div>
-        </div>
-      </div>
+     <!-- Search and Actions Bar -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+  <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+    <div class="flex-1 relative w-full md:w-auto">
+      <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Buscar por nombre, email o rol..."
+        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+
+    <div class="flex gap-3 flex-wrap items-center">
+      <!-- Filtro por Rol -->
+      <select
+        v-model="filtroRol"
+        class="px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Todos los roles</option>
+        <option value="ESTUDIANTE">Estudiante</option>
+        <option value="PROFESOR">Profesor</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+
+      <!-- Filtro por Estado -->
+      <select
+        v-model="filtroEstado"
+        class="px-4 py-3 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="">Todos los estados</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+      </select>
+
+      <!-- Botón Crear -->
+      <button
+        @click="abrirModalCrear"
+        class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nuevo usuario
+      </button>
+    </div>
+  </div>
+</div>
+
 
       <!-- Users Table -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -585,7 +502,7 @@ onMounted(() => {
             />
           </div>
 
-          <div>
+          <div v-if="!isEditing">
             <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
             <input
               v-model="currentUsuario.email"
@@ -595,6 +512,18 @@ onMounted(() => {
               required
             />
           </div>
+
+          <div v-if="!isEditing">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+            <input
+              v-model="currentUsuario.password"
+              type="password"
+              placeholder="Contraseña segura"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
