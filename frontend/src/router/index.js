@@ -1,4 +1,33 @@
 // src/router/index.js
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import UserTypeSelector from '../components/UserTypeSelector.vue'
+import PreferenceSelector from '../components/PreferenceSelector.vue'
+
+import Dashboard from '../views/Dashboard.vue'
+
+
+import ConfiguracionView from '../views/ConfiguracionView.vue'
+import UsuariosView from '../views/admin/UsuariosView.vue'
+import CarrerasView from '../views/admin/CarrerasView.vue'
+import HorariosView from '../views/admin/HorariosView.vue'
+import GroupEnrollmentsView from '../views/admin/GroupEnrollmentsView.vue'
+import Asignaturas from '../views/admin/Asignaturas.vue'
+import InscripcionView from '../views/InscripcionView.vue'
+import DashboardAdmin from '../views/DashboardAdmin.vue'
+import DashboardProfesor from '../views/DashboardProfesor.vue'
+
+
+const routes = [
+
+  
+  { path: '/', redirect: '/login' },
+
+  { path: '/login', component: LoginView, meta: { guestOnly: true } },
+  { path: '/register', component: RegisterView, meta: { guestOnly: true } },
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 

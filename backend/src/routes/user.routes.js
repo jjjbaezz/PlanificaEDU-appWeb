@@ -4,8 +4,10 @@ import { updateRole, getPreferences, updatePreferences, createUser, getAll, getB
 import passport from 'passport';
 
 const router = Router();
-// Crear usuario
-router.post('/', createUser);
+router.post('/',requireAuth, requireRole('ADMIN'), createUser); 
+router.patch('/:id/toggle',requireAuth, requireRole('ADMIN'), toggleUserStatus);
+router.patch('/:id',requireAuth, requireRole('ADMIN'), updateUser);
+router.patch('/:id/deactivate',requireAuth, requireRole('ADMIN'),  deactivateUser);
 
 router.get('/', getAll);
 router.get('/:id', getById);
