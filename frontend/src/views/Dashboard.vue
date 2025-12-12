@@ -7,6 +7,10 @@ import Sidebar from '../components/Sidebar.vue'
 import StatCard from '../components/StatCard.vue'
 import TableCard from '../components/TableCard.vue'
 
+import { useDashboardData } from '../composable/userDashboardData'
+
+const dash = useDashboardData();
+
 const auth = useAuthStore()
 const router = useRouter()
 
@@ -17,74 +21,12 @@ const nombre = computed(() => auth.user?.nombre || 'Usuario')
 const loading = ref(false)
 const error = ref(null)
 
-// ADMIN - Stats principales
-const adminStats = ref({
-  totalUsuarios: 1250,
-  carrerasActivas: 18,
-  periodoActual: 'C3-2025',
-  gruposAbiertos: 85
-})
-
-// ADMIN - Ocupación por carrera
-const ocupacionPorCarrera = ref([
-  { carrera: 'Software', ocupacion: 45 },
-  { carrera: 'Psicología', ocupacion: 62 },
-  { carrera: 'Derecho', ocupacion: 78 },
-  { carrera: 'Medicina', ocupacion: 92 },
-  { carrera: 'Arquitectura', ocupacion: 55 },
-  { carrera: 'Diseño', ocupacion: 48 },
-  { carrera: 'Contaduría', ocupacion: 71 }
-])
-
-// ADMIN - Alertas
-const alertas = ref([
-  {
-    tipo: 'warning',
-    icono: '⚠️',
-    titulo: 'Conflicto de Horario',
-    descripcion: 'Aula B-201 reservada dos veces el lunes a las 10am.'
-  },
-  {
-    tipo: 'error',
-    icono: '�',
-    titulo: 'Baja Inscripción',
-    descripcion: 'El grupo de "Cálculo Avanzado" tiene solo 3 estudiantes.'
-  },
-  {
-    tipo: 'success',
-    icono: '✅',
-    titulo: 'Aprobación Pendiente',
-    descripcion: 'Nueva materia "IA Generativa" espera aprobación.'
-  }
-])
+// ADMIN
+const adminStats = ref({})
+const ocupacionPorCarrera = ref([])
 
 // ADMIN - Últimas inscripciones
-const ultimasInscripciones = ref([
-  {
-    estudiante: 'Sofía Vergara',
-    carrera: 'Ingeniería de Software',
-    fecha: '2024-08-15',
-    estado: 'Aprobada'
-  },
-  {
-    estudiante: 'Juan Carlos Pérez',
-    carrera: 'Medicina',
-    fecha: '2024-08-15',
-    estado: 'Aprobada'
-  },
-  {
-    estudiante: 'Valentina Rojas',
-    carrera: 'Arquitectura',
-    fecha: '2024-08-14',
-    estado: 'Pendiente'
-  },
-  {
-    estudiante: 'Mateo González',
-    carrera: 'Derecho',
-    fecha: '2024-08-13',
-    estado: 'Aprobada'
-  }
-])
+const ultimasInscripciones = ref([])
 
 // PROFESOR
 const profesorCards = ref({
@@ -138,14 +80,13 @@ async function loadAdminDashboard() {
   if (auth.isDummyMode) return
   loading.value = true
   try {
-    // Cargar stats
-    const { data: stats } = await http.get('/admin/dashboard/stats')
-    if (stats) adminStats.value = stats
+    await dash.loadAdmin()
+    adminStats.value = dash.adminStats.value
+    ocupacionPorCarrera.value = dash.ocupacionPorCarrera.value
+    alertas.value = dash.alertas.value
+    ultimasInscripciones.value = dash.ultimasInscripciones.value
   } catch (e) {
-    console.error('Error loading admin dashboard:', e)
-    error.value = e.message
-  } finally {
-    loading.value = false
+    error.value = dash.error.value
   }
 }
 
@@ -191,10 +132,12 @@ async function loadEstudianteDashboard() {
         <div class="flex items-center gap-4">
           <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </button>
-          <div class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm">
+          <div
+            class="w-10 h-10 bg-orange-200 rounded-full flex items-center justify-center font-bold text-orange-700 text-sm">
             {{ nombre.substring(0, 2).toUpperCase() }}
           </div>
           <div>
@@ -210,26 +153,11 @@ async function loadEstudianteDashboard() {
       <!-- ADMIN VIEW -->
       <section v-if="role === 'ADMIN'" class="space-y-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard
-            label="Total Usuarios"
-            :value="adminStats.totalUsuarios"
-            sublabel="Profesores: 36 · Estudiantes: 92"
-          />
-          <StatCard
-            label="Carreras Activas"
-            :value="adminStats.carrerasActivas"
-            sublabel="Materias: 154"
-          />
-          <StatCard
-            label="Período Actual"
-            :value="adminStats.periodoActual"
-            sublabel="Grupos: 47"
-          />
-          <StatCard
-            label="Grupos Abiertos"
-            :value="adminStats.gruposAbiertos"
-            sublabel="Cupos: 588"
-          />
+          <StatCard label="Total Usuarios" :value="adminStats.totalUsuarios"
+            sublabel="Profesores: 36 · Estudiantes: 92" />
+          <StatCard label="Carreras Activas" :value="adminStats.carrerasActivas" sublabel="Materias: 154" />
+          <StatCard label="Período Actual" :value="adminStats.periodoActual" sublabel="Grupos: 47" />
+          <StatCard label="Grupos Abiertos" :value="adminStats.gruposAbiertos" sublabel="Cupos: 588" />
         </div>
 
         <!-- Charts Section -->
@@ -240,9 +168,14 @@ async function loadEstudianteDashboard() {
               <span class="text-green-600 text-sm font-semibold">↑ +5.2%</span>
             </div>
             <p class="text-gray-500 text-sm mb-6">Estudiantes inscritos este semestre.</p>
+            <div v-if="ocupacionPorCarrera.length === 0" class="text-gray-400 text-sm">
+              No hay datos de ocupación todavía.
+            </div>
 
-            <div class="h-72 bg-gradient-to-b from-sky-50 to-sky-100 rounded-lg flex items-end justify-around px-4 py-8 gap-2">
-              <div v-for="item in ocupacionPorCarrera" :key="item.carrera" class="flex flex-col items-center gap-2 flex-1">
+            <div v-if="ocupacionPorCarrera.length > 0"
+              class="h-72 bg-gradient-to-b from-sky-50 to-sky-100 rounded-lg flex items-end justify-around px-4 py-8 gap-2">
+              <div v-for="item in ocupacionPorCarrera" :key="item.carrera"
+                class="flex flex-col items-center gap-2 flex-1">
                 <div class="w-full bg-sky-300 rounded-t" :style="{ height: item.ocupacion * 2 + 'px' }"></div>
                 <p class="text-xs text-gray-600 font-medium">{{ item.carrera }}</p>
               </div>
@@ -253,16 +186,11 @@ async function loadEstudianteDashboard() {
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 class="text-lg font-bold text-gray-900 mb-4">Alertas y Notificaciones</h3>
             <div class="space-y-3">
-              <div
-                v-for="(alerta, idx) in alertas"
-                :key="idx"
-                class="flex gap-3 p-3 border rounded-lg"
-                :class="{
-                  'bg-yellow-50 border-yellow-200': alerta.tipo === 'warning',
-                  'bg-red-50 border-red-200': alerta.tipo === 'error',
-                  'bg-green-50 border-green-200': alerta.tipo === 'success'
-                }"
-              >
+              <div v-for="(alerta, idx) in alertas" :key="idx" class="flex gap-3 p-3 border rounded-lg" :class="{
+                'bg-yellow-50 border-yellow-200': alerta.tipo === 'warning',
+                'bg-red-50 border-red-200': alerta.tipo === 'error',
+                'bg-green-50 border-green-200': alerta.tipo === 'success'
+              }">
                 <span class="text-xl flex-shrink-0">{{ alerta.icono }}</span>
                 <div>
                   <p class="font-semibold text-sm text-gray-900">{{ alerta.titulo }}</p>
@@ -274,16 +202,12 @@ async function loadEstudianteDashboard() {
         </div>
 
         <!-- Recent Inscriptions -->
-        <TableCard
-          title="Últimas Inscripciones"
-          :headers="[
-            { key: 'estudiante', label: 'ESTUDIANTE' },
-            { key: 'carrera', label: 'CARRERA' },
-            { key: 'fecha', label: 'FECHA' },
-            { key: 'estado', label: 'ESTADO' },
-          ]"
-          :rows="ultimasInscripciones"
-        />
+        <TableCard title="Últimas Inscripciones" :headers="[
+          { key: 'estudiante', label: 'ESTUDIANTE' },
+          { key: 'carrera', label: 'CARRERA' },
+          { key: 'fecha', label: 'FECHA' },
+          { key: 'estado', label: 'ESTADO' },
+        ]" :rows="ultimasInscripciones" />
       </section>
 
       <!-- PROFESOR VIEW -->
@@ -294,17 +218,13 @@ async function loadEstudianteDashboard() {
           <StatCard label="Bloques Disponibles" :value="profesorCards.disponibilidadBloques" />
         </div>
 
-        <TableCard
-          title="Tus Grupos (Recientes)"
-          :headers="[
-            { key: 'periodo', label: 'Período' },
-            { key: 'codigo', label: 'Código' },
-            { key: 'materia', label: 'Materia' },
-            { key: 'seccion', label: 'Sección' },
-            { key: 'cupo_max', label: 'Cupo' },
-          ]"
-          :rows="profesorTabla"
-        />
+        <TableCard title="Tus Grupos (Recientes)" :headers="[
+          { key: 'periodo', label: 'Período' },
+          { key: 'codigo', label: 'Código' },
+          { key: 'materia', label: 'Materia' },
+          { key: 'seccion', label: 'Sección' },
+          { key: 'cupo_max', label: 'Cupo' },
+        ]" :rows="profesorTabla" />
       </section>
 
       <!-- ESTUDIANTE VIEW -->
@@ -325,17 +245,13 @@ async function loadEstudianteDashboard() {
             </div>
           </div>
 
-          <TableCard
-            title="Mis Inscripciones"
-            :headers="[
-              { key: 'periodo', label: 'Período' },
-              { key: 'codigo', label: 'Código' },
-              { key: 'materia', label: 'Materia' },
-              { key: 'seccion', label: 'Sección' },
-              { key: 'profesor', label: 'Profesor' },
-            ]"
-            :rows="estudianteMaterias"
-          />
+          <TableCard title="Mis Inscripciones" :headers="[
+            { key: 'periodo', label: 'Período' },
+            { key: 'codigo', label: 'Código' },
+            { key: 'materia', label: 'Materia' },
+            { key: 'seccion', label: 'Sección' },
+            { key: 'profesor', label: 'Profesor' },
+          ]" :rows="estudianteMaterias" />
         </div>
       </section>
     </main>
@@ -345,4 +261,3 @@ async function loadEstudianteDashboard() {
 <style scoped>
 /* small adjustments to match existing UI */
 </style>
-
