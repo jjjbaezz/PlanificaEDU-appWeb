@@ -2,25 +2,30 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
-import LoginView from "../views/LoginView.vue";
-import RegisterView from "../views/RegisterView.vue";
-import UserTypeSelector from "../components/UserTypeSelector.vue";
-import PreferenceSelector from "../components/PreferenceSelector.vue";
-import Dashboard from "../views/Dashboard.vue";
-import MateriasView from "../views/MateriasView.vue";
-import MateriasAdminView from "../views/admin/MateriasAdminView.vue";
-import ConfiguracionView from "../views/ConfiguracionView.vue";
-import UsuariosView from "../views/admin/UsuariosView.vue";
-import CarrerasView from "../views/admin/CarrerasView.vue";
-import HorariosView from "../views/admin/HorariosView.vue";
-import GroupEnrollmentsView from "../views/admin/GroupEnrollmentsView.vue";
-import DashboardPro from "../views/DashboardProfesor.vue";
-import Asignaturas from "../views/Asignaturas.vue";
-import InscripcionView from "../views/InscripcionView.vue";
-import EdificiosAdminView from "../views/admin/EdificiosAdminView.vue";
+import LoginView from '../views/LoginView.vue'
+import RegisterView from '../views/RegisterView.vue'
+import UserTypeSelector from '../components/UserTypeSelector.vue'
+import PreferenceSelector from '../components/PreferenceSelector.vue'
+
+import Dashboard from '../views/Dashboard.vue'
+import DashboardPro from '../views/DashboardProfesor.vue'
+
+import MateriasView from '../views/MateriasView.vue'
+import MateriasAdminView from '../views/admin/MateriasAdminView.vue'
+import EdificiosAdminView from '../views/admin/EdificiosAdminView.vue'
+
+import ConfiguracionView from '../views/ConfiguracionView.vue'
+import UsuariosView from '../views/admin/UsuariosView.vue'
+import CarrerasView from '../views/admin/CarrerasView.vue'
+import HorariosView from '../views/admin/HorariosView.vue'
+import GroupEnrollmentsView from '../views/admin/GroupEnrollmentsView.vue'
+import Asignaturas from '../views/admin/Asignaturas.vue'
+import InscripcionView from '../views/InscripcionView.vue'
 
 const routes = [
-  { path: "/", redirect: "/login" },
+
+  
+  { path: '/', redirect: '/login' },
 
   { path: "/login", component: LoginView, meta: { guestOnly: true } },
   { path: "/register", component: RegisterView, meta: { guestOnly: true } },
