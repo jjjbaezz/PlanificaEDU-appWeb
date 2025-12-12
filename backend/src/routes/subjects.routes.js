@@ -16,7 +16,7 @@ import {
 const router = Router();
 
 // GET /subjects
-router.get('/', requireAuth, listSubjects);
+router.get('/',  listSubjects);
 
 // GET /subjects/validate?codigo=ABC123
 router.get('/validate', requireAuth, validateSubjectCode);
