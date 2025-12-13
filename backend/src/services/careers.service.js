@@ -19,7 +19,7 @@ const carreraService = {
   // Crea nueva carrera
   createCarrera: async ({ codigo, nombre }) => {
     const existeCodigo = await prisma.carreras.findUnique({ where: { codigo } });
-    const existeNombre = await prisma.carreras.findUnique({ where: { nombre } });
+    const existeNombre = await prisma.carreras.findFirst({ where: { nombre } });
 
     if (existeCodigo || existeNombre) {
       const error = new Error('Código o nombre duplicado');

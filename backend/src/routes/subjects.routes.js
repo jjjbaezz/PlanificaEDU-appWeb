@@ -22,10 +22,10 @@ router.get('/',  listSubjects);
 router.get('/validate', requireAuth, validateSubjectCode);
 
 // GET /subjects/:id
-router.get('/:id', requireAuth, getSubjectById);
+router.get('/:id',  getSubjectById);
 
 // POST /subjects
-router.post('/', requireAuth, createSubject);
+router.post('/',  createSubject);
 
 // PUT /subjects/:id
 router.put('/:id', requireAuth, updateSubject);

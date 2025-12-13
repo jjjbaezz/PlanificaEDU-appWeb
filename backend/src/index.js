@@ -15,7 +15,20 @@ import classrooomRoutes from './routes/classroom.routes.js';
 import buildingRoutes from './routes/building.routes.js';
 import periodRoutes from './routes/period.routes.js';
 import scheduleRoutes from './routes/schedule.routes.js';
+import groupRoutes from './routes/group.routes.js';
+
 import enrollmentRoutes from './routes/enrollment.routes.js';
+import subjectSelection from './routes/subject-selection.routes.js';
+import realEnrollmentRoutes from './routes/real-enrollmen.routes.js';
+import autoEnrollmentRoutes from './routes/auto-enrollment.routes.js';
+
+import personalScheduleRoute from './routes/personalSchedule.routes.js';
+
+
+
+
+
+
 
 
 
@@ -59,6 +72,19 @@ app.use('/periods', periodRoutes);
 app.use('/schedules', scheduleRoutes);
 app.use('/enrollments', enrollmentRoutes);
 app.use('/time-blocks', timeBlocksRoutes);
+app.use('/group', groupRoutes);
+
+
+
+app.use('/subject-selection', subjectSelection);
+app.use('/real-enrollment', realEnrollmentRoutes);
+app.use('/auto-enrollment', autoEnrollmentRoutes);
+
+app.use('/personal-schedule', personalScheduleRoute);
+
+
+
+
 
 
 

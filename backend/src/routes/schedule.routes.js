@@ -1,22 +1,16 @@
-import { Router } from 'express';
-import { generate, getById } from '../controllers/schedule.controller.js';
-import { requireAuth } from '../middlewares/auth.js'; // tu middleware passport
+// routes/schedule.routes.js
+import express from 'express';
+import * as scheduleController from '../controllers/schedule.controller.js';
 
 
+const router = express.Router();
 
 
-
-
-const router = Router();
-
-
-router.get('/:id', getById);
-
-router.post('/generate', requireAuth, generate);
-
-
-
-
-
+// Rutas principales
+router.get('/', scheduleController.listSchedules);
+router.post('/generate', scheduleController.generateSchedule);
+router.get('/:id', scheduleController.getSchedule);
+router.get('/:id/conflicts', scheduleController.analyzeConflicts);
+router.delete('/:id', scheduleController.deleteSchedule);
 
 export default router;

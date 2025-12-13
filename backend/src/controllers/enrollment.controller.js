@@ -97,7 +97,7 @@ const getGroupWithDetails = async (groupId) =>
     },
   });
 
-const getPrerequisitesMap = async (materiaIds = []) => {
+export const getPrerequisitesMap = async (materiaIds = []) => {
   if (!materiaIds.length) return new Map();
   const rows = await prisma.prerrequisitos.findMany({
     where: { materia_id: { in: materiaIds } },
@@ -118,7 +118,7 @@ const getPrerequisitesMap = async (materiaIds = []) => {
   return map;
 };
 
-const getCompletedSubjects = async (studentId, beforeDate = null) => {
+export const getCompletedSubjects = async (studentId, beforeDate = null) => {
   const rows = await prisma.inscripciones.findMany({
     where: {
       usuario_id: studentId,

@@ -14,7 +14,7 @@ const signToken = (user) =>{
 export const register = async (req, res) => {
   try {
 
-    const { nombre, apellido, email, password } = req.body;
+    const { nombre, apellido, email, password, carrera_id } = req.body;
     if (!nombre || !email || !password) {
       return res.status(400).json({ message: 'nombre, email y password son obligatorios' });
     }
@@ -26,7 +26,7 @@ export const register = async (req, res) => {
     const fullName = apellido ? `${nombre} ${apellido}` : nombre;
 
     const user = await prisma.usuarios.create({
-      data: { nombre: fullName, email, rol: "ESTUDIANTE", password_hash }
+      data: { nombre: fullName, email, rol: "ESTUDIANTE", password_hash, carrera_id }
     });
 
     const token = signToken(user);

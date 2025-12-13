@@ -24,6 +24,8 @@ model usuarios {
   preferencias_usuario    preferencias_usuario?
   profesores              profesores?
   carreras                carreras?                 @relation(fields: [carrera_id], references: [id], onUpdate: NoAction)
+
+  seleccionesMaterias selecciones_materia[]
 }
 
 model preferencias_usuario {
@@ -116,6 +118,8 @@ model materias {
   carreras                                            carreras?        @relation(fields: [carrera_id], references: [id], onUpdate: NoAction)
   prerrequisitos_prerrequisitos_materia_idTomaterias  prerrequisitos[] @relation("prerrequisitos_materia_idTomaterias")
   prerrequisitos_prerrequisitos_requiere_idTomaterias prerrequisitos[] @relation("prerrequisitos_requiere_idTomaterias")
+
+  seleccionesMaterias selecciones_materia[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -128,6 +132,8 @@ model periodos {
   activo       Boolean    @default(false)
   grupos       grupos[]
   horarios     horarios[]
+
+  seleccionesMaterias selecciones_materia[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -210,6 +216,24 @@ model disponibilidad_aula {
   @@index([bloque_id], map: "idx_disp_aula_bloque")
 }
 
+
+model selecciones_materia {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id    String   @db.Uuid
+  periodo_id    String   @db.Uuid
+  materia_id    String   @db.Uuid
+  prioridad     Int      @default(1)  // 1=alta, 2=media, 3=baja
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  
+  usuarios      usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  periodos      periodos @relation(fields: [periodo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  materias      materias @relation(fields: [materia_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  
+  @@unique([usuario_id, periodo_id, materia_id], map: "uq_seleccion_materia")
+  @@index([periodo_id], map: "idx_selecciones_periodo")
+  @@index([materia_id], map: "idx_selecciones_materia")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model disponibilidad_profesor {
   id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -222,6 +246,8 @@ model disponibilidad_profesor {
   @@unique([profesor_id, bloque_id], map: "uq_disp_prof")
   @@index([bloque_id], map: "idx_disp_prof_bloque")
 }
+
+
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model edificios {

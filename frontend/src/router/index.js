@@ -9,6 +9,8 @@ import PreferenceSelector from '../components/PreferenceSelector.vue'
 
 import Dashboard from '../views/Dashboard.vue'
 import DashboardPro from '../views/DashboardProfesor.vue'
+import DashboardAdmin from '../views/DashboardAdmin.vue'
+
 
 import MateriasView from '../views/MateriasView.vue'
 import MateriasAdminView from '../views/admin/MateriasAdminView.vue'
@@ -21,6 +23,10 @@ import HorariosView from '../views/admin/HorariosView.vue'
 import GroupEnrollmentsView from '../views/admin/GroupEnrollmentsView.vue'
 import Asignaturas from '../views/admin/Asignaturas.vue'
 import InscripcionView from '../views/InscripcionView.vue'
+import SubjectSelection from '../views/SubjectSelection.vue'
+import StudentSchedules from '../views/StudentSchedules.vue'
+
+
 
 const routes = [
 
@@ -28,6 +34,13 @@ const routes = [
   { path: '/', redirect: '/login' },
 
   { path: "/login", component: LoginView, meta: { guestOnly: true } },
+
+  { path: "/xd", component: SubjectSelection },
+
+  { path: "/student-schedules", name: 'student-schedules', component: StudentSchedules },
+
+
+
   { path: "/register", component: RegisterView, meta: { guestOnly: true } },
 
   {
@@ -42,11 +55,21 @@ const routes = [
   },
 
   { path: "/dashboard", component: Dashboard, meta: { requiresAuth: true } },
+
   {
     path: "/dashboardProfesor",
     component: DashboardPro,
     meta: { requiresAuth: true },
   },
+
+    {
+    path: "/dashboard/admin",
+    component: DashboardAdmin,
+    meta: { requiresAuth: true },
+  },
+
+
+  
   { path: "/materias", component: MateriasView, meta: { requiresAuth: true } },
   {
     path: "/asignaturas",
