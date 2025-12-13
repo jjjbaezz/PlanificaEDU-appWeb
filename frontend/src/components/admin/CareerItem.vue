@@ -25,6 +25,11 @@ const onDelete = () => emit("delete", props.item);
       <p v-if="item.codigo" class="text-base text-slate-700 mb-0.5">
         <span class="font-semibold">Código:</span> {{ item.codigo }}
       </p>
+      <div v-if="item._count" class="mt-1">
+        <span class="text-xs text-gray-500">
+          <span class="font-semibold">Materias:</span> {{ item._count.materias ?? 0 }}
+        </span>
+      </div>
       <p v-if="item.descripcion" class="text-sm text-slate-500 mt-1">
         {{ item.descripcion }}
       </p>

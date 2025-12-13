@@ -6,6 +6,7 @@ const carreraService = {
   getAllCarreras: async () => {
     return prisma.carreras.findMany({
       include: {
+        materias: true,
         _count: {
           select: {
             usuarios: true,
@@ -18,8 +19,9 @@ const carreraService = {
 
   // Crea nueva carrera
   createCarrera: async ({ codigo, nombre }) => {
+
     const existeCodigo = await prisma.carreras.findUnique({ where: { codigo } });
-    const existeNombre = await prisma.carreras.findUnique({ where: { nombre } });
+    const existeNombre = await prisma.carreras.findFirst({ where: { nombre } });
 
     if (existeCodigo || existeNombre) {
       const error = new Error('Código o nombre duplicado');
@@ -75,14 +77,11 @@ const carreraService = {
     }
 
     const tieneUsuarios = await prisma.usuarios.findFirst({ where: { carrera_id: carreraId } });
-    const tieneMaterias = await prisma.materias.findFirst({ where: { carrera_id: carreraId } });
-
     if (tieneUsuarios || tieneMaterias) {
-      const error = new Error('Carrera con datos asociados');
-      error.message = 'FORBIDDEN_DELETE';
-      throw error;
-    }
+    // Elimina todas las materias asociadas a la carrera
+    await prisma.materias.deleteMany({ where: { carrera_id: carreraId } });
 
+    // Ahora sí elimina la carrera
     await prisma.carreras.delete({ where: { id: carreraId } });
     return true;
   }

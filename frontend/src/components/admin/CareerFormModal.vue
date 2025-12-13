@@ -139,6 +139,7 @@ watch(
   (val) => {
     if (val) {
       form.value = {
+        codigo: val.codigo || "",
         nombre: val.nombre || "",
         descripcion: val.descripcion || "",
         activo: val.activo ?? true,
@@ -160,7 +161,7 @@ watch(
             : [])) ??
         [];
     } else {
-      form.value = { nombre: "", descripcion: "", activo: true };
+      form.value = { codigo: "", nombre: "", descripcion: "", activo: true };
       selectedProfessorIds.value = [];
       selectedSubjectIds.value = [];
     }

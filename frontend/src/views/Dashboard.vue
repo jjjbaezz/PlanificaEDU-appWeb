@@ -7,7 +7,7 @@ import Sidebar from '../components/Sidebar.vue'
 import StatCard from '../components/StatCard.vue'
 import TableCard from '../components/TableCard.vue'
 
-import { useDashboardData } from '../composable/userDashboardData'
+import { useDashboardData } from '../composable/userDasboardData'
 
 const dash = useDashboardData();
 

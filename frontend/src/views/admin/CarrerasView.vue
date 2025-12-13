@@ -47,9 +47,17 @@ const demoCarreras = [
 ];
 
 const hasRealItems = computed(() => items.value.length > 0);
-const careersToRender = computed(() =>
-  hasRealItems.value ? items.value : demoCarreras
-);
+const careersToRender = computed(() => {
+  if (!hasRealItems.value) return demoCarreras;
+  const q = search.value.trim().toLowerCase();
+  if (!q) return items.value;
+  return items.value.filter(item => {
+    return (
+      (item.nombre && item.nombre.toLowerCase().includes(q)) ||
+      (item.codigo && String(item.codigo).toLowerCase().includes(q))
+    );
+  });
+});
 
 const showForm = ref(false);
 const editing = ref(null);
@@ -68,7 +76,7 @@ async function fetchCarreras() {
   error.value = null;
   try {
     const res = await careersService.fetchCareers({ search: search.value, page: page.value, limit: limit.value });
-    items.value = res.data.items || res.data.careers || [];
+    items.value = Array.isArray(res.data) ? res.data : (res.data.items || res.data.careers || []);
     meta.value = res.data.meta || {
       page: page.value,
       limit: limit.value,
