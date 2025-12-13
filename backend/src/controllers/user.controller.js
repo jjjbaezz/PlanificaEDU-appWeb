@@ -1,3 +1,63 @@
+// PATCH /users/:id/toggle
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Solo admin puede alternar el estado
+    if (req.user.rol !== 'ADMIN') {
+      return res.status(403).json({ message: 'Sin permisos para modificar el estado del usuario' });
+    }
+    const user = await prisma.usuarios.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    const updated = await prisma.usuarios.update({
+      where: { id },
+      data: { activo: !user.activo },
+    });
+    const { password_hash, ...safe } = updated;
+    return res.json({ user: safe });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error alternando estado', error: err.message });
+  }
+};
+
+// PATCH /users/:id
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, email, rol } = req.body;
+    if (req.user.id !== id && req.user.rol !== 'ADMIN') {
+      return res.status(403).json({ message: 'Sin permisos para modificar este usuario' });
+    }
+    const data = {};
+    if (nombre) data.nombre = nombre;
+    if (email) data.email = email;
+    if (rol && req.user.rol === 'ADMIN') data.rol = rol;
+    const updated = await prisma.usuarios.update({ where: { id }, data });
+    const { password_hash, ...safe } = updated;
+    return res.json({ user: safe });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error actualizando usuario', error: err.message });
+  }
+};
+
+// PATCH /users/:id/deactivate
+export const deactivateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (req.user.rol !== 'ADMIN') {
+      return res.status(403).json({ message: 'Sin permisos para desactivar usuario' });
+    }
+    const updated = await prisma.usuarios.update({
+      where: { id },
+      data: { activo: false },
+    });
+    const { password_hash, ...safe } = updated;
+    return res.json({ user: safe });
+  } catch (err) {
+    return res.status(500).json({ message: 'Error desactivando usuario', error: err.message });
+  }
+};
 import bcrypt from 'bcryptjs';
 import * as preferencesService from '../services/preferences.service.js'
 import { prisma } from '../prisma.js';

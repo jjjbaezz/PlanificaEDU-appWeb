@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth.js';
-import { updateRole, getPreferences, updatePreferences, createUser, getAll, getById } from '../controllers/user.controller.js';
+import { updateRole, getPreferences, updatePreferences, createUser, getAll, getById, toggleUserStatus, updateUser, deactivateUser } from '../controllers/user.controller.js';
 import { requireRole } from '../middlewares/roles.js';
 import passport from 'passport';
 
