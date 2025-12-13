@@ -67,7 +67,7 @@ const carreraService = {
     });
   },
 
-  // Elimina carrera si no tiene relaciones
+
   deleteCarrera: async (carreraId) => {
     const carrera = await prisma.carreras.findUnique({ where: { id: carreraId } });
     if (!carrera) {
@@ -75,13 +75,8 @@ const carreraService = {
       error.message = 'NOT_FOUND';
       throw error;
     }
-
-    const tieneUsuarios = await prisma.usuarios.findFirst({ where: { carrera_id: carreraId } });
-    if (tieneUsuarios || tieneMaterias) {
-    // Elimina todas las materias asociadas a la carrera
     await prisma.materias.deleteMany({ where: { carrera_id: carreraId } });
 
-    // Ahora sí elimina la carrera
     await prisma.carreras.delete({ where: { id: carreraId } });
     return true;
   }

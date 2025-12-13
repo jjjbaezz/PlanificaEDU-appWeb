@@ -10,6 +10,7 @@ async function fetchAulas() {
   aulasLoading.value = true;
   try {
     const res = await classroomsService.fetchAulas();
+    // Mapear para mostrar nombre de edificio
     aulas.value = (res.data.classroom || []).map(aula => {
       const edificio = edificios.value.find(e => e.id === aula.edificio_id);
       return {
@@ -86,6 +87,8 @@ async function handleCreateAula(payload) {
     await classroomsService.createAula({
       edificio_id: payload.edificioId,
       codigo: payload.nombre,
+      capacidad: 30, // Puedes ajustar esto o pedirlo en el modal
+      tipo: "TEORIA", // Puedes ajustar esto o pedirlo en el modal
     });
     await fetchAulas();
     showCreateAula.value = false;

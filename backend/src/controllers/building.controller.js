@@ -1,7 +1,7 @@
 import * as buildingsService from '../services/buildings.service.js';
 
 
-// GET /subjects
+// GET /buildings
 export const getAll = async (req, res) => {
     try {
         const result = await buildingsService.listBuildings(req.query);
