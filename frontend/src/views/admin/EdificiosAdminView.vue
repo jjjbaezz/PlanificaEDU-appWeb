@@ -1,8 +1,28 @@
 <script setup>
-import { ref, computed } from "vue";
+
+import { ref, computed, onMounted } from "vue";
 import Sidebar from "../../components/Sidebar.vue";
 import CreateSpaceModal from "../../components/admin/CreateSpaceModal.vue";
 import { useAuthStore } from "../../stores/auth";
+import buildingsService from "../../services/buildings";
+import classroomsService from "../../services/classrooms";
+async function fetchAulas() {
+  aulasLoading.value = true;
+  try {
+    const res = await classroomsService.fetchAulas();
+    aulas.value = (res.data.classroom || []).map(aula => {
+      const edificio = edificios.value.find(e => e.id === aula.edificio_id);
+      return {
+        ...aula,
+        edificio: edificio ? edificio.nombre : aula.edificio_id
+      };
+    });
+  } catch (e) {
+    aulas.value = [];
+  } finally {
+    aulasLoading.value = false;
+  }
+}
 
 const auth = useAuthStore();
 
@@ -16,20 +36,10 @@ const role = computed(
 const searchEdificio = ref("");
 const searchAula = ref("");
 
-const edificios = ref([
-  { id: 1, nombre: "Edificio Principal", aulas: 15 },
-  { id: 2, nombre: "Anexo de Ingeniería", aulas: 10 },
-]);
+const edificios = ref([]);
 
-const aulas = ref([
-  { id: 1, nombre: "Aula Magna", edificio: "Edificio Principal" },
-  {
-    id: 2,
-    nombre: "Laboratorio de Cómputo 1",
-    edificio: "Anexo de Ingeniería",
-  },
-  { id: 3, nombre: "Salón 201-B", edificio: "Edificio Principal" },
-]);
+const aulas = ref([]);
+const aulasLoading = ref(false);
 
 const showCreateAula = ref(false);
 const showCreateEdificio = ref(false);
@@ -48,7 +58,7 @@ const filteredEdificios = computed(() => {
 const filteredAulas = computed(() => {
   const q = searchAula.value.trim().toLowerCase();
   if (!q) return aulas.value;
-  return aulas.value.filter((a) => a.nombre.toLowerCase().includes(q));
+  return aulas.value.filter((a) => a.codigo.toLowerCase().includes(q) || (a.tipo?.toLowerCase?.() || '').includes(q));
 });
 
 function onAddEdificio() {
@@ -59,31 +69,28 @@ function onAddAula() {
   showCreateAula.value = true;
 }
 
-function handleCreateEdificio(payload) {
-  const nextId = (edificios.value.at(-1)?.id ?? 0) + 1;
-
-  edificios.value.push({
-    id: nextId,
-    nombre: payload.nombre || `Edificio ${nextId}`,
-    aulas: 0,
-  });
+async function handleCreateEdificio(payload) {
+  try {
+    const res = await buildingsService.createBuilding({
+      nombre: payload.nombre,
+      codigo: payload.nombre?.slice(0, 3).toUpperCase() + Date.now().toString().slice(-3) // Genera un código simple
+    });
+    await fetchEdificios();
+  } catch (e) {
+    alert("Error al crear edificio: " + (e?.response?.data?.message || e.message));
+  }
 }
 
-function handleCreateAula(payload) {
-  const nextId = (aulas.value.at(-1)?.id ?? 0) + 1;
-
-  const edificioId = Number(payload.edificioId);
-  const edificio = edificios.value.find((e) => e.id === edificioId);
-  const edificioNombre = edificio ? edificio.nombre : "Sin edificio";
-
-  aulas.value.push({
-    id: nextId,
-    nombre: payload.nombre || `Aula ${nextId}`,
-    edificio: edificioNombre,
-  });
-
-  if (edificio) {
-    edificio.aulas += 1;
+async function handleCreateAula(payload) {
+  try {
+    await classroomsService.createAula({
+      edificio_id: payload.edificioId,
+      codigo: payload.nombre,
+    });
+    await fetchAulas();
+    showCreateAula.value = false;
+  } catch (e) {
+    alert("Error al crear aula: " + (e?.response?.data?.message || e.message));
   }
 }
 
@@ -97,52 +104,71 @@ function onEditAula(aula) {
   showEditAulaModal.value = true;
 }
 
-function handleSaveEdificioEdit() {
+async function handleSaveEdificioEdit() {
   if (!editingEdificio.value) return;
-  const idx = edificios.value.findIndex(
-    (e) => e.id === editingEdificio.value.id
-  );
-  if (idx !== -1) {
-    edificios.value[idx] = { ...editingEdificio.value };
+  try {
+    await buildingsService.updateBuilding(editingEdificio.value.id, {
+      nombre: editingEdificio.value.nombre,
+      codigo: editingEdificio.value.codigo,
+    });
+    await fetchEdificios();
+    showEditEdificioModal.value = false;
+  } catch (e) {
+    alert("Error al editar edificio: " + (e?.response?.data?.message || e.message));
   }
-  showEditEdificioModal.value = false;
 }
 
-function handleSaveAulaEdit() {
+async function handleSaveAulaEdit() {
   if (!editingAula.value) return;
-
-  const original = aulas.value.find((a) => a.id === editingAula.value.id);
-  if (original) {
-    original.nombre = editingAula.value.nombre;
-    const prevBuildingName = original.edificio;
-    original.edificio = editingAula.value.edificio;
-
-    if (prevBuildingName !== original.edificio) {
-      const prevBuilding = edificios.value.find(
-        (e) => e.nombre === prevBuildingName
-      );
-      const newBuilding = edificios.value.find(
-        (e) => e.nombre === original.edificio
-      );
-
-      if (prevBuilding && prevBuilding.aulas > 0) {
-        prevBuilding.aulas -= 1;
-      }
-      if (newBuilding) {
-        newBuilding.aulas += 1;
-      }
-    }
+  try {
+    await classroomsService.updateAula(editingAula.value.id, {
+      edificio_id: editingAula.value.edificio_id,
+      codigo: editingAula.value.codigo,
+      capacidad: editingAula.value.capacidad,
+      tipo: editingAula.value.tipo,
+    });
+    await fetchAulas();
+    showEditAulaModal.value = false;
+  } catch (e) {
+    alert("Error al editar aula: " + (e?.response?.data?.message || e.message));
   }
-
-  showEditAulaModal.value = false;
 }
 
-function onDeleteEdificio(edificio) {
-  alert(`Eliminar edificio: ${edificio.nombre} (solo diseño).`);
+async function onDeleteEdificio(edificio) {
+  if (!confirm(`¿Seguro que deseas eliminar el edificio "${edificio.nombre}"?`)) return;
+  try {
+    await buildingsService.deleteBuilding(edificio.id);
+    await fetchEdificios();
+  } catch (e) {
+    alert("Error al eliminar edificio: " + (e?.response?.data?.message || e.message));
+  }
+}
+async function fetchEdificios() {
+  try {
+    const res = await buildingsService.fetchBuildings();
+    edificios.value = (res.data.items || res.data.buildings || res.data || []).map(ed => ({
+      ...ed,
+      aulas: ed.aulas_count || 0 // Ajusta si backend devuelve el conteo
+    }));
+  } catch (e) {
+    edificios.value = [];
+  }
 }
 
-function onDeleteAula(aula) {
-  alert(`Eliminar aula: ${aula.nombre} (solo diseño).`);
+
+onMounted(async () => {
+  await fetchEdificios();
+  await fetchAulas();
+});
+
+async function onDeleteAula(aula) {
+  if (!confirm(`¿Seguro que deseas eliminar el aula "${aula.codigo}"?`)) return;
+  try {
+    await classroomsService.deleteAula(aula.id);
+    await fetchAulas();
+  } catch (e) {
+    alert("Error al eliminar aula: " + (e?.response?.data?.message || e.message));
+  }
 }
 </script>
 
