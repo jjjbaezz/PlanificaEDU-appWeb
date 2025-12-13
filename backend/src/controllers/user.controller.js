@@ -1,4 +1,8 @@
 import bcrypt from 'bcryptjs';
+import * as preferencesService from '../services/preferences.service.js'
+import { prisma } from '../prisma.js';
+
+
 // POST /users
 export const createUser = async (req, res) => {
   try {
@@ -25,7 +29,6 @@ export const createUser = async (req, res) => {
     return res.status(500).json({ message: 'Error creando usuario', error: err.message });
   }
 };
-import { prisma } from '../prisma.js';
 
 
 
@@ -100,35 +103,48 @@ export const updateRole = async (req, res) => {
   }
 };
 
-// PUT /users/:id/preferences
-export const upsertPreferences = async (req, res) => {
+
+export const updatePreferences = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { turno_preferido, compactacion, evitar_dias, pesos } = req.body;
 
     if (req.user.id !== id && req.user.rol !== 'ADMIN') {
       return res.status(403).json({ message: 'Sin permisos para modificar estas preferencias' });
     }
 
-    const result = await prisma.preferencias_usuario.upsert({
-      where: { usuario_id: id },
-      create: {
-        usuario_id: id,
-        turno_preferido: turno_preferido ?? null,
-        compactacion: typeof compactacion === 'number' ? compactacion : 5,
-        evitar_dias: evitar_dias ?? null,
-        pesos: pesos ?? undefined
-      },
-      update: {
-        turno_preferido: turno_preferido ?? null,
-        compactacion: typeof compactacion === 'number' ? compactacion : 5,
-        evitar_dias: evitar_dias ?? null,
-        pesos: pesos ?? undefined
-      }
-    });
+    const { turno, diasEvitar = [], compactacion = 'media' } = req.body;
 
-    return res.json({ preferencias: result });
+    const turnosValidos = ['manana', 'tarde', 'noche'];
+    const compactacionValidos = ['baja', 'media', 'alta'];
+
+    if (!turnosValidos.includes(turno)) {
+      return res.status(400).json({ message: 'Turno inválido' });
+    }
+
+    if (!compactacionValidos.includes(compactacion)) {
+      return res.status(400).json({ message: 'Nivel de compactación inválido' });
+    }
+
+    const preferencias = await preferencesService.savePreferences(id, { turno, diasEvitar, compactacion });
+
+    return res.json({ preferencias });
   } catch (err) {
-    return res.status(500).json({ message: 'Error guardando preferencias', error: err.message });
+    console.log("Error" + err.message);
   }
 };
+
+export async function getPreferences(req, res, next) {
+  try {
+    const userIdParam = req.params.id
+
+    if (!req.user || req.user.id !== userIdParam) {
+      return res.status(403).json({ message: 'No tienes permiso para ver estas preferencias' })
+    }
+
+    const preferencias = await preferencesService.getUserPreferences(userIdParam)
+
+    return res.json({ preferencias })
+  } catch (err) {
+    console.log("Error" + err.message);
+  }
+}

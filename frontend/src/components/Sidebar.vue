@@ -159,6 +159,7 @@ const baseMenu: MenuItem[] = [
     label: "Asignaturas",
     path: "/asignaturas",
     icon: "AsignaturasIcon.svg",
+    roles: ["ESTUDIANTE", "PROFESOR"]
   },
   {
     id: "materias",
@@ -215,7 +216,7 @@ const menuItems = computed(() => {
 
 const isDashboardActive = (itemPath: string): boolean => {
   if (itemPath === "/dashboard") {
-    return $route.path === "/dashboard" || $route.path === "/dashboardProfesor";
+    return $route.path === "/dashboard";
   }
   return $route.path.startsWith(itemPath);
 };

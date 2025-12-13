@@ -91,23 +91,11 @@ const onSubmit = async (e) => {
 
     if (!user?.rol) return router.push('/onboarding/type')
 
-    switch(user.rol) {
-      case 'ESTUDIANTE':
-        if (!user.preferencias) {
-          return router.push('/onboarding/preferences')
-        }
-        return router.push('/dashboard')
-        
-      case 'PROFESOR':
-        return router.push('/dashboard/profesor')
-        
-      case 'ADMIN':
-        return router.push('/dashboard/admin')
-        
-      default:
-        return router.push('/onboarding/type') 
-      }
+    if (user.rol === 'ESTUDIANTE' && !user.preferencias) return router.push('/onboarding/preferences')
 
+    return router.push('/dashboard')
+        
+   
   } catch (err) {
     const status = err?.response?.status
     const serverMsg = err?.response?.data?.message
